@@ -1,0 +1,12 @@
+# GDAL bindings
+#GDAL>=3.2.2    #TODO: causes conflicts
+
+# PyTorch
+--find-links https://download.pytorch.org/whl/torch_stable.html
+torch==1.8.1+cu111
+torchvision==0.9.1+cu111
+torchaudio==0.8.1
+
+# Detectron2
+--find-links https://dl.fbaipublicfiles.com/detectron2/wheels/cu111/torch1.8/index.html
+detectron2

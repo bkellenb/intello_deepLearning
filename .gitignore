@@ -1,4 +1,6 @@
+.vscode
 *.pyc
 __pycache__
 
-cnn_states/
+
+datasets/
