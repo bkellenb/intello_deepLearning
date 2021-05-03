@@ -1,0 +1,10 @@
+VERSION: 2
+DATASET:
+  NAME: "solar_panels"
+  DATA_ROOT: "/data/datasets/INTELLO/solarPanels"
+OUTPUT_DIR: "cnn_states/solarPanels"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  MASK_ON: True
+  RESNETS:
+    DEPTH: 50

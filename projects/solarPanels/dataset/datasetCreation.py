@@ -13,6 +13,8 @@ import os
 import copy
 import argparse
 import glob
+import shutil
+import json
 import numpy as np
 
 from tqdm import tqdm
@@ -26,19 +28,19 @@ import geojson
 
 FIELD_NAME_VALUES = {
     'Type': {
-        0: 'unknown',
-        1: 'electricity',
-        2: 'warm water'
+        1: 'unknown',
+        2: 'electricity',
+        3: 'warm water'
     },
     'Loca': {
-        0: 'on ground',
-        1: 'on roof'
+        1: 'on ground',
+        2: 'on roof'
     }
 }
 
 
 
-def generate_coco_dataset(imageFolder, imageTilingLayer, fishnetLayer, annotationLayer, annotationField, destFolder, fractions=(0.6, 0.1, 0.3)):
+def generate_coco_dataset(imageFolder, fishnetLayer, annotationLayer, annotationField, destFolder, fractions=(0.6, 0.1, 0.3), force=False):
     '''
         Reads an ESRI Shapefile containing fishnet polygons and assigns
         them into one of the train/val/test sets. Assignment is performed
@@ -50,14 +52,24 @@ def generate_coco_dataset(imageFolder, imageTilingLayer, fishnetLayer, annotatio
 
         Inputs:
         - "imageFolder": base directory in which the orthoimages can be found
-        - "imageTilingLayer": path to an ESRI Shapefile containing fishnet poly-
-                              gons that define the tiling of the orthoimages
         - "fishnetLayer": path to an ESRI Shapefile containing fishnet polygons
         - "destFile": output path to which the split CSV file should be saved
         - "fractions": tuple of train, val, test set fractions (number of )
     '''
+
+    # check if already done
+    imgFolderPath = os.path.join(destFolder, 'images')
+    if os.path.isdir(imgFolderPath):
+        if force:
+            print(f'Image folder path "{imgFolderPath}" found and force recreation selected; deleting folder...')
+            shutil.rmtree(imgFolderPath)
+        else:
+            print(f'Image folder path "{imgFolderPath}" already exists, aborting...')
+            import sys
+            sys.exit(0)
+
     print('Reading and cropping orthoimages...')
-    os.makedirs(os.path.join(destFolder, 'images'), exist_ok=True)
+    os.makedirs(imgFolderPath, exist_ok=True)
 
     # create VRT from orthoimages
     vrtPath = os.path.join(imageFolder, 'orthoimages.vrt')
@@ -94,7 +106,7 @@ def generate_coco_dataset(imageFolder, imageTilingLayer, fishnetLayer, annotatio
             }
 
             # create image from perimeter
-            destImagePath = 'images', f'{id}.tif'
+            destImagePath = os.path.join(destFolder, 'images', f'{id}.tif')
             out_img, out_transform = mask.mask(raster_vrt, [geojson.Polygon([[
                 [pCoords[0], pCoords[1]],
                 [pCoords[2], pCoords[1]],
@@ -102,7 +114,6 @@ def generate_coco_dataset(imageFolder, imageTilingLayer, fishnetLayer, annotatio
                 [pCoords[0], pCoords[3]],
                 [pCoords[0], pCoords[1]]
             ]])], crop=True)
-            print('TODO: check if correct, skip if already exists') #TODO
 
             # update metadata
             perimeters[pCoords[0]][pCoords[1]]['file_name'] = destImagePath
@@ -114,11 +125,13 @@ def generate_coco_dataset(imageFolder, imageTilingLayer, fishnetLayer, annotatio
                                 'width': out_img.shape[2],
                                 'height': out_img.shape[1],
                                 'transform': out_transform})
-            with rasterio.open(os.path.join(destFolder, destImagePath), 'w', **out_meta) as dest_img:
+            with rasterio.open(destImagePath, 'w', **out_meta) as dest_img:
                 dest_img.write(out_img)
 
 
     coordsX = np.array(list(perimeters.keys()))
+    perimeterSize = (pCoords[2]-pCoords[0], pCoords[3]-pCoords[1])
+
 
     # load annotations
     labelClasses = {}   # dict with occurrence counts per label class
@@ -126,18 +139,22 @@ def generate_coco_dataset(imageFolder, imageTilingLayer, fishnetLayer, annotatio
     anno = shapefile.Reader(annotationLayer)
     anno_raw = anno.shapeRecords()
     for id, anno in enumerate(anno_raw):
-        label = getattr(anno.record, annotationField)
+        label = getattr(anno.record, annotationField) + 1   # COCO label classes start at 1
         if label not in labelClasses:
             labelClasses[label] = 0
         labelClasses[label] += 1
         annotations[id] = anno.shape.points
 
         # assign to perimeters: split into chunks if it exceeds borders
-        for c in ((0,1), (0,3), (2,1), (2,3)):      # check all bbox corners
+        for cIdx, c in enumerate(((0,1), (0,3), (2,1), (2,3))):      # check all bbox corners
             coord = (anno.shape.bbox[c[0]], anno.shape.bbox[c[1]])
-            matchX = coordsX[np.argmin((coordsX - coord[0])**2)]
+            distX = (coordsX - coord[0])**2
+            distX[(coordsX > coord[0]) + (coordsX+perimeterSize[0] < coord[0])] = 1e9
+            matchX = coordsX[np.argmin(distX)]
             coordsY = np.array(list(perimeters[matchX].keys()))
-            matchY = coordsY[np.argmin((coordsY - coord[1])**2)]
+            distY = (coordsY - coord[1])**2
+            distY[(coordsY > coord[1]) + (coordsY+perimeterSize[1] < coord[1])] = 1e9
+            matchY = coordsY[np.argmin(distY)]
             perimeter = perimeters[matchX][matchY]
 
             if id in perimeter['annotationIDs']:
@@ -151,7 +168,8 @@ def generate_coco_dataset(imageFolder, imageTilingLayer, fishnetLayer, annotatio
             poly[:,1] = np.clip(poly[:,1], perimeter[1], perimeter[3]) - perimeter[1]
 
             # append
-            perimeters[matchX][matchY]['annotationIDs'].append(id)
+            annoID = f'{id}_{cIdx}'     # need to assign new unique ID since same polygon gets split potentially multiple times
+            perimeters[matchX][matchY]['annotationIDs'].append(annoID)
             perimeters[matchX][matchY]['geometries'].append(poly)
             perimeters[matchX][matchY]['labels'].append(label)
 
@@ -218,6 +236,7 @@ def generate_coco_dataset(imageFolder, imageTilingLayer, fishnetLayer, annotatio
             })
 
             for aIdx in range(len(perimeter['labels'])):
+                
                 # calculate MBR as bounding box from coordinates
                 poly = perimeter['geometries'][aIdx]
                 mbr = [
@@ -229,19 +248,22 @@ def generate_coco_dataset(imageFolder, imageTilingLayer, fishnetLayer, annotatio
 
                 # flatten polygon into x,y-alternating pairs
                 #TODO: need to remove last point?
-                poly = poly.ravel()
+                poly = poly.ravel().tolist()
 
                 cocoDicts[setIdx]['annotations'].append({
                     'id': perimeter['annotationIDs'][aIdx],
                     'image_id': perimeter['id'],
                     'category_id': perimeter['labels'][aIdx],
                     'bbox': mbr,
-                    'segmentation': poly,
+                    'segmentation': [poly],
                     # 'area': 0,
                     'iscrowd': 0
                 })
+    
+    # write annotations to files
+    for setIdx, split in enumerate(('train', 'val', 'test')):
+        json.dump(cocoDicts[setIdx], open(os.path.join(destFolder, split+'.json'), 'w'))
 
-            #TODO 2: write script that harvests image patches based on perimeters.
 
 
 
@@ -250,25 +272,25 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Create train/val/test split file from fishnet polygons.')
     parser.add_argument('--image_folder', type=str, default='/data/datasets/INTELLO/ORTHOS_2019/TIFF',
                         help='Path of the folder that contains the orthoimages')
-    parser.add_argument('--image_tiling_file', type=str, default='/data/datasets/INTELLO/ORTHOS_2019/OPENDATA_ORTHOS_2019_MAILLES_TUILES_SHAPE/SPW_2019_MAILLAGE.shp',
-                        help='Path to the fishnet layer (ESRI Shapefile) that defines the location of each of the orthoimages (for indexing)')
     parser.add_argument('--fishnet_file', type=str, default='datasets/solarPanels/annotations/fishnet_Wallonie_200_150m_30_4_2021_BK.shp',
                         help='Path to the fishnet layer (ESRI Shapefile) that contains perimeter polygons')
     parser.add_argument('--anno_file', type=str, default='datasets/solarPanels/annotations/SAMPLES_0_SolarPanels_30_4_2021_BK.shp',
                         help='Path to the annotation layer (ESRI Shapefile) that contains the actual label polygons')
     parser.add_argument('--anno_field', type=str, default='Type',
                         help='Name of the attribute field of the annotation layer that determines the object class')
-    parser.add_argument('--dest_folder', type=str, default='TEMP_DELETE',
-                        help='Destination file name for the split file to be saved into (CSV)')
+    parser.add_argument('--dest_folder', type=str, default='/data/datasets/INTELLO/solarPanels',
+                        help='Destination directory to save patches and annotations (COCO format) into')
     parser.add_argument('--train_frac', type=float, default=0.6,
                         help='Training set fraction (default: 0.6)')
     parser.add_argument('--val_frac', type=float, default=0.1,
                         help='Validation set fraction (default: 0.1)')
+    parser.add_argument('--force', type=int, default=1,
+                        help='If 1, the dataset is forcefully being recreated (otherwise creation is skipped if image folder exists)')
     args = parser.parse_args()
 
     fractions = [max(0, min(1, args.train_frac)), max(0, min(1, args.val_frac))]
     fractions[1] = min(fractions[1], 1 - fractions[0])
     fractions.append(max(0, 1 - sum(fractions)))
 
-    generate_coco_dataset(args.image_folder, args.image_tiling_file,
-                            args.fishnet_file, args.anno_file, args.anno_field, args.dest_folder, fractions)
+    generate_coco_dataset(args.image_folder,
+                            args.fishnet_file, args.anno_file, args.anno_field, args.dest_folder, fractions, bool(args.force))
