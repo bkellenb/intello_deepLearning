@@ -8,9 +8,9 @@ tqdm>=4.60.0
 
 # PyTorch
 --find-links https://download.pytorch.org/whl/torch_stable.html
-torch==1.8.1+cu111
-torchvision==0.9.1+cu111
+torch==1.7.1+cu110   #1.8.1+cu111
+torchvision==0.8.2+cu110    #0.9.1+cu111
 
 # Detectron2
---find-links https://dl.fbaipublicfiles.com/detectron2/wheels/cu111/torch1.8/index.html
+--find-links https://dl.fbaipublicfiles.com/detectron2/wheels/cu110/torch1.7/index.html # https://dl.fbaipublicfiles.com/detectron2/wheels/cu111/torch1.8/index.html
 detectron2

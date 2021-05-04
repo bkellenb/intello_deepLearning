@@ -115,10 +115,15 @@ def generate_coco_dataset(imageFolder, fishnetLayer, annotationLayer, annotation
                 [pCoords[0], pCoords[1]]
             ]])], crop=True)
 
+            if out_img.sum() < 1:
+                print(f'WARNING: all-zero image at perimeter "{p.shape.bbox}"; skipping patch and polygon extraction for this area...')
+                continue
+
             # update metadata
             perimeters[pCoords[0]][pCoords[1]]['file_name'] = destImagePath
             perimeters[pCoords[0]][pCoords[1]]['image_width'] = out_img.shape[2]
             perimeters[pCoords[0]][pCoords[1]]['image_height'] = out_img.shape[1]
+            perimeters[pCoords[0]][pCoords[1]]['affine'] = out_transform
 
             out_meta = raster_vrt.meta
             out_meta.update({'driver': 'GTiff',
@@ -127,7 +132,6 @@ def generate_coco_dataset(imageFolder, fishnetLayer, annotationLayer, annotation
                                 'transform': out_transform})
             with rasterio.open(destImagePath, 'w', **out_meta) as dest_img:
                 dest_img.write(out_img)
-
 
     coordsX = np.array(list(perimeters.keys()))
     perimeterSize = (pCoords[2]-pCoords[0], pCoords[3]-pCoords[1])
@@ -160,12 +164,15 @@ def generate_coco_dataset(imageFolder, fishnetLayer, annotationLayer, annotation
             if id in perimeter['annotationIDs']:
                 # polygon has already been assigned to this perimeter
                 continue
-            perimeter = perimeter['perimeter']
 
-            # limit and shift polygon to perimeter extents (TODO: convert to pixel coordinates)
+            if 'affine' not in perimeter:
+                # perimeter skipped due to all-zero image
+                continue
+
+            # convert polygon to pixel coordinates (inverse affine transform)
             poly = np.array(anno.shape.points)
-            poly[:,0] = np.clip(poly[:,0], perimeter[0], perimeter[2]) - perimeter[0]
-            poly[:,1] = np.clip(poly[:,1], perimeter[1], perimeter[3]) - perimeter[1]
+            for p in range(poly.shape[0]):
+                poly[p,:] = ~perimeter['affine'] * (poly[p,0], poly[p,1])
 
             # append
             annoID = f'{id}_{cIdx}'     # need to assign new unique ID since same polygon gets split potentially multiple times
@@ -214,6 +221,10 @@ def generate_coco_dataset(imageFolder, fishnetLayer, annotationLayer, annotation
         orderY = np.random.permutation(len(pKeysY))
         for oY in orderY:
             perimeter = perimeters[pKeysX[oX]][pKeysY[oY]]
+
+            if 'affine' not in perimeter:
+                # perimeter skipped due to all-zero image
+                continue
             
             # assign to appropriate set
             hist = np.zeros(shape=lcAbundance.shape, dtype=int)
@@ -237,17 +248,28 @@ def generate_coco_dataset(imageFolder, fishnetLayer, annotationLayer, annotation
 
             for aIdx in range(len(perimeter['labels'])):
                 
-                # calculate MBR as bounding box from coordinates
                 poly = perimeter['geometries'][aIdx]
+
+                # calculate MBR as bounding box from coordinates
                 mbr = [
                     np.min(poly[:,0]),
                     np.min(poly[:,1]),
-                    np.max(poly[:,0]) - np.min(poly[:,0]),
-                    np.max(poly[:,1]) - np.min(poly[:,1])
+                    np.max(poly[:,0]),
+                    np.max(poly[:,1])
                 ]
 
+                # check if polygon is of sufficient size
+                mbr_clip = np.clip(mbr, 0, None)
+                mbr_clip[2] = min(mbr_clip[2], perimeter['image_width'])
+                mbr_clip[3] = min(mbr_clip[3], perimeter['image_height'])
+                if mbr_clip[2]-mbr_clip[0] < 0.1 or mbr_clip[3] - mbr_clip[1] < 0.1:
+                    continue
+                
+                # convert to XYWH format
+                mbr[2] -= mbr[0]
+                mbr[3] -= mbr[1]
+
                 # flatten polygon into x,y-alternating pairs
-                #TODO: need to remove last point?
                 poly = poly.ravel().tolist()
 
                 cocoDicts[setIdx]['annotations'].append({

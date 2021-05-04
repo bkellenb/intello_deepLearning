@@ -6,7 +6,10 @@
 
 import os
 import argparse
+import math
 import logging
+
+from tqdm import trange
 
 import torch
 from torch.nn.parallel import DistributedDataParallel
@@ -21,6 +24,9 @@ from detectron2.data import build_detection_train_loader, build_detection_test_l
 from detectron2.modeling import build_model
 from detectron2.solver import build_lr_scheduler, build_optimizer
 from detectron2.utils.events import EventStorage
+from detectron2.utils.visualizer import Visualizer
+
+from engine.dataMapper import multiband_mapper
 
 
 logger = logging.getLogger('INTELLO')
@@ -30,15 +36,16 @@ def loadDataset(cfg, split='train'):
     '''
         Currently only supports COCO-formatted datasets.
     '''
-    dsName = cfg.DATASET.NAME + '_' + split
+    dsName = cfg.DATASETS.NAME + '_' + split
     register_coco_instances(dsName, {},
-        os.path.join(cfg.DATASET.DATA_ROOT, split+'.json'),
-        cfg.DATASET.DATA_ROOT)
+        os.path.join(cfg.DATASETS.DATA_ROOT, split+'.json'),
+        cfg.DATASETS.DATA_ROOT)
     setattr(cfg.DATASETS, split.upper(), dsName)
     if split == 'train':
-        return build_detection_train_loader(cfg, dsName)
+        return build_detection_train_loader(cfg, dataset=DatasetCatalog.get(dsName), mapper=multiband_mapper,
+                                        aspect_ratio_grouping=False)
     else:
-        return build_detection_test_loader(cfg, dsName)
+        return build_detection_test_loader(cfg, dataset_name=dsName, mapper=multiband_mapper)
 
 
 
@@ -65,6 +72,7 @@ def processEpoch(cfg, epoch, dataLoader, model, train=True, resume=True):
     logger.info(f'[Epoch {epoch}] Starting training from iteration {start_iter}')
 
     # dataset loop
+    tBar = trange(max_iter)
     with EventStorage(start_iter) as storage:
         for data, iteration in zip(dataLoader, range(start_iter, max_iter)):
             storage.iter = iteration
@@ -89,7 +97,9 @@ def processEpoch(cfg, epoch, dataLoader, model, train=True, resume=True):
                 print('debug')  #TODO
             
             periodic_checkpointer.step(iteration)
-    pass
+            tBar.update(1)
+
+    tBar.close()
 
 
 
@@ -116,21 +126,32 @@ if __name__ == '__main__':
     DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
         cfg.MODEL.WEIGHTS, resume=args.resume
     )
+
+    # adapt to multiple input bands if necessary    #TODO: dedicated routine?
+    if cfg.INPUT.NUM_INPUT_CHANNELS != 3:
+        # replicate weights and pixel mean and std
+        numRep = math.ceil(cfg.INPUT.NUM_INPUT_CHANNELS / 3)
+        weight = model.backbone.stem.conv1.weight
+        if numRep > 1:
+            weight = weight.repeat(1, numRep, 1, 1)
+            model.pixel_mean = model.pixel_mean.repeat(numRep,1,1)
+            model.pixel_std = model.pixel_std.repeat(numRep,1,1)
+        weight = weight[:,:cfg.INPUT.NUM_INPUT_CHANNELS,:,:]
+        model.backbone.stem.conv1.weight = torch.nn.Parameter(weight)
+        model.backbone.stem.conv1.in_channels = cfg.INPUT.NUM_INPUT_CHANNELS
+        model.pixel_mean = model.pixel_mean[:cfg.INPUT.NUM_INPUT_CHANNELS,...]
+        model.pixel_std = model.pixel_std[:cfg.INPUT.NUM_INPUT_CHANNELS,...]
+
     distributed = comm.get_world_size() > 1
     if distributed:
         model = DistributedDataParallel(
             model, device_ids=[comm.get_local_rank()], broadcast_buffers=False
         )
 
-
     cfg.freeze()
 
-    #TODO: needs custom image loading routine
     os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
-    from detectron2.engine import DefaultTrainer
-    trainer = DefaultTrainer(cfg)
-    trainer.resume_or_load(resume=args.resume)
-    trainer.train()
+
 
     # do the work
     processEpoch(cfg, 1, dl_train, model, True, True)
