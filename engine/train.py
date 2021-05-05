@@ -150,7 +150,7 @@ if __name__ == '__main__':
     args = parser.parse_args()
 
     print('Initiating model training...')
-    print(f'\tconfig:\t\t\t{args.config}')
+    print(f'\tconfig:\t\t\t"{args.config}"')
 
     # load config
     cfg = config.get_cfg()
@@ -159,9 +159,10 @@ if __name__ == '__main__':
 
     # print quick overview of parameters
     print(f'\tbase lr:\t\t{cfg.SOLVER.BASE_LR}')
+    print(f'\tscheduler:\t\t"{cfg.SOLVER.LR_SCHEDULER_NAME}", gamma: {cfg.SOLVER.GAMMA}, steps: {cfg.SOLVER.STEPS}')
     print(f'\tweight decay:\t\t{cfg.SOLVER.WEIGHT_DECAY}')
     print(f'\tbatch size:\t\t{cfg.SOLVER.IMS_PER_BATCH}')
-    print(f'\tsave dir:\t\t{cfg.OUTPUT_DIR}')
+    print(f'\tcheckpoint:\t\tsaving to "{cfg.OUTPUT_DIR}", every {cfg.SOLVER.CHECKPOINT_PERIOD} iterations')
     print(f'\timage size:\t\t{cfg.INPUT.IMAGE_SIZE}')
     print('\taugmentations:\t\t[{}]'.format(', '.join([aug['NAME'] for aug in cfg.AUGMENTATION])))
 
