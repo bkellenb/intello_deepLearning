@@ -6,8 +6,8 @@ DATASETS:
   NAME: "solar_panels"
   DATA_ROOT: "/data/datasets/INTELLO/solarPanels"
 SOLVER:
-  BASE_LR: 0.00001
-  IMS_PER_BATCH: 1
+  BASE_LR: 0.001
+  IMS_PER_BATCH: 2
 OUTPUT_DIR: "cnn_states/solarPanels"
 MODEL:
   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
@@ -20,3 +20,22 @@ INPUT:
   NUM_INPUT_CHANNELS: 4
   NORMALISATION: 65535
   IMAGE_SIZE: [800, 600]
+AUGMENTATION:
+  - NAME: "RandomBrightness"
+    KWARGS:
+      intensity_min: 0.8
+      intensity_max: 1.2
+  - NAME: "RandomContrast"
+    KWARGS:
+      intensity_min: 0.8
+      intensity_max: 1.2
+  - NAME: "RandomFlip"
+    KWARGS:
+      prob: 0.5
+      horizontal: 0
+      vertical: 1
+  - NAME: "RandomFlip"
+    KWARGS:
+      prob: 0.5
+      horizontal: 1
+      vertical: 0

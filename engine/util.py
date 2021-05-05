@@ -18,7 +18,7 @@ from detectron2.checkpoint import DetectionCheckpointer
 
 
 
-def loadModel(cfg):
+def loadModel(cfg, resume=True):
     '''
         Performs the following steps:
         1. Build a base Detectron2 model, load pre-trained weights
@@ -52,7 +52,7 @@ def loadModel(cfg):
 
     # load existing model weights
     checkpointer = DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR)
-    if checkpointer.has_checkpoint():
+    if resume and checkpointer.has_checkpoint():
         startIter = checkpointer.resume_or_load(checkpointer.get_checkpoint_file()).get('iteration', -1) + 1
     else:
         startIter = 0

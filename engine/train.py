@@ -14,12 +14,12 @@ import torch
 
 import detectron2.utils.comm as comm
 from detectron2.engine import default_writers
-from detectron2.checkpoint import DetectionCheckpointer, PeriodicCheckpointer
+from detectron2.checkpoint import PeriodicCheckpointer
 from detectron2 import config
 from detectron2.data.datasets import register_coco_instances
 from detectron2.data.catalog import DatasetCatalog
 from detectron2.data import build_detection_train_loader, build_detection_test_loader
-from detectron2.modeling import build_model
+import detectron2.data.transforms as T
 from detectron2.solver import build_lr_scheduler, build_optimizer
 from detectron2.evaluation import COCOEvaluator, inference_on_dataset, print_csv_format
 from detectron2.utils.events import EventStorage
@@ -41,7 +41,13 @@ def loadDataset(cfg, split='train'):
         cfg.DATASETS.DATA_ROOT)
     setattr(cfg.DATASETS, split.upper(), dsName)
 
-    mapper = MultibandMapper(cfg.INPUT.NORMALISATION, cfg.INPUT.IMAGE_SIZE)
+    # data augmentation
+    augmentations = []
+    for aug in cfg.AUGMENTATION:
+        augClass = getattr(T, aug['NAME'])
+        augmentations.append(augClass(**aug['KWARGS']))
+
+    mapper = MultibandMapper(cfg.INPUT.NORMALISATION, cfg.INPUT.IMAGE_SIZE, augmentations=augmentations)
     if split == 'train':
         return build_detection_train_loader(cfg, dataset=DatasetCatalog.get(dsName), mapper=mapper,
                                         aspect_ratio_grouping=False), \
@@ -52,19 +58,20 @@ def loadDataset(cfg, split='train'):
 
 
 
-def do_train(cfg, epoch, model, resume=True):
+def do_train(cfg, model, resume=True):
 
     # load dataset
     dataLoader, _ = loadDataset(cfg, 'train')
+    print(f'\tdataset:\t\t"{cfg.DATASETS.NAME}", no. batches: {len(dataLoader.dataset)}')
 
     # load model
-    model, checkpointer, start_iter = util.loadModel(cfg)
+    model, checkpointer, start_iter = util.loadModel(cfg, resume)
+    max_iter = cfg.SOLVER.MAX_ITER
+    print(f'\tmodel iter:\t\t{start_iter}/{max_iter}, resume: {resume}')
 
     model.train()
     optimiser = build_optimizer(cfg, model)
     scheduler = build_lr_scheduler(cfg, optimiser)
-
-    max_iter = cfg.SOLVER.MAX_ITER
 
     periodic_checkpointer = PeriodicCheckpointer(
         checkpointer, cfg.SOLVER.CHECKPOINT_PERIOD, max_iter=max_iter
@@ -72,7 +79,8 @@ def do_train(cfg, epoch, model, resume=True):
 
     writers = default_writers(cfg.OUTPUT_DIR, max_iter) if comm.is_main_process() else []
 
-    logger.info(f'[Epoch {epoch}] Starting training from iteration {start_iter}')
+    print('\n')
+    logger.info(f'Starting training from iteration {start_iter}')
 
     # dataset loop
     tBar = trange(max_iter)
@@ -141,10 +149,21 @@ if __name__ == '__main__':
                         help='Whether to resume model training or start from pre-trained base.')
     args = parser.parse_args()
 
+    print('Initiating model training...')
+    print(f'\tconfig:\t\t\t{args.config}')
+
     # load config
     cfg = config.get_cfg()
     cfg.set_new_allowed(True)
     cfg.merge_from_file(args.config)
 
+    # print quick overview of parameters
+    print(f'\tbase lr:\t\t{cfg.SOLVER.BASE_LR}')
+    print(f'\tweight decay:\t\t{cfg.SOLVER.WEIGHT_DECAY}')
+    print(f'\tbatch size:\t\t{cfg.SOLVER.IMS_PER_BATCH}')
+    print(f'\tsave dir:\t\t{cfg.OUTPUT_DIR}')
+    print(f'\timage size:\t\t{cfg.INPUT.IMAGE_SIZE}')
+    print('\taugmentations:\t\t[{}]'.format(', '.join([aug['NAME'] for aug in cfg.AUGMENTATION])))
+
     # do the work
-    do_train(cfg, 1, True)
+    do_train(cfg, True)

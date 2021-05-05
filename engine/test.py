@@ -85,7 +85,7 @@ if __name__ == '__main__':
                         help='Path to the config.yaml file to use on this machine.')
     parser.add_argument('--split', type=str, default='test',
                         help='Which dataset split to perform inference on {"train", "val", "test"}. Ignored if "image_folder" is specified.')
-    parser.add_argument('--image_folder', type=str, default='/data/datasets/INTELLO/solarPanels/images',
+    parser.add_argument('--image_folder', type=str, #default='/data/datasets/INTELLO/solarPanels/images',
                         help='Directory of images to predict on. If not specified, the dataset under "split" in the config file will be used.')
     parser.add_argument('--vis', type=int, default=1,
                         help='Whether to visualise predictions or not.')
@@ -93,24 +93,36 @@ if __name__ == '__main__':
                         help='Whether to perform accuracy evaluation or not. Ignored if "image_folder" is specified.')
     args = parser.parse_args()
 
+    print('Initiating inference...')
+    print(f'\tconfig:\t\t\t{args.config}')
+
     # load config
     cfg = config.get_cfg()
     cfg.set_new_allowed(True)
     cfg.merge_from_file(args.config)
 
-    load_config_dataset(cfg, split='train')     # register dataset for metadata
+    # print quick overview of parameters
+    print(f'\timage size:\t\t{cfg.INPUT.IMAGE_SIZE}')
+    print(f'\tvisualise:\t\t{bool(args.vis)}')
+
     if args.image_folder is not None:
+        load_config_dataset(cfg, split='train')     # register dataset for metadata
         dataset = load_image_folder(args.image_folder)
+        print(f'\tImage folder:\t\t\t"{args.image_folder}"')
     else:
         cfg.SOLVER.IMS_PER_BATCH = 1
         dataset = load_config_dataset(cfg, args.split)
+        print(f'\tdataset:\t\t"{cfg.DATASETS.NAME}", split: {args.split}, no. images: {len(dataset)}')
+        print(f'\tevaluate:\t\t{bool(args.evaluate)}')
 
     mapper = MultibandMapper(cfg.INPUT.NORMALISATION, cfg.INPUT.IMAGE_SIZE)
     dataLoader = build_detection_test_loader(dataset, mapper=mapper)
     
     # load model
-    model, _, start_iter = util.loadModel(cfg)
-    print(f'Loaded model state at iteration {start_iter}.')
+    model, _, start_iter = util.loadModel(cfg, resume=True)
+    print(f'\tmodel iter:\t\t{start_iter}')
+
+    print('\n')
 
     # do the work
     predict(cfg, dataLoader, model, args.evaluate, args.vis)

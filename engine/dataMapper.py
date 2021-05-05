@@ -15,7 +15,7 @@ import rasterio
 
 class MultibandMapper:
     
-    def __init__(self, normalisation_value, image_size):
+    def __init__(self, normalisation_value, image_size, augmentations=None):
         self.normalisation_value = normalisation_value
         self.image_size = image_size
         if not isinstance(self.image_size, Iterable):
@@ -23,6 +23,16 @@ class MultibandMapper:
         else:
             # height, width
             self.image_size = (self.image_size[1], self.image_size[0])
+        
+        self.transform = []
+        if isinstance(augmentations, T.AugmentationList):
+            self.transform.extend(augmentations.augs)
+        elif isinstance(augmentations, Iterable):
+            self.transform.extend(augmentations)
+        self.transform.append(T.Resize(self.image_size))
+        self.transform = T.AugmentationList(self.transform)
+        
+
     
     def __call__(self, dataset_dict):
         dataset_dict = copy.deepcopy(dataset_dict)
@@ -31,10 +41,9 @@ class MultibandMapper:
         with rasterio.open(dataset_dict['file_name']) as f:
             image = f.read().astype(np.float32) / self.normalisation_value
             image = np.transpose(image, (1,2,0))
-
-        # See "Data Augmentation" tutorial for details usage
+        
         auginput = T.AugInput(image)
-        transform = T.Resize(self.image_size)(auginput)
+        transform = self.transform(auginput)
         image = torch.from_numpy(auginput.image.transpose(2, 0, 1))
         annos = [
             utils.transform_instance_annotations(annotation, [transform], image.shape[1:])
