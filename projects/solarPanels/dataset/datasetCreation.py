@@ -77,6 +77,7 @@ def generate_coco_dataset(imageFolder, fishnetLayer, annotationLayer, annotation
         orthoimages = glob.glob(os.path.join(imageFolder, '**/*.tif'))
         orthoVRT = gdal.BuildVRT(vrtPath, orthoimages)
         orthoVRT.FlushCache()
+    
     with rasterio.open(vrtPath) as raster_vrt:
 
         # load annotation fishnet into custom spatial index, also clip and create images
@@ -262,12 +263,16 @@ def generate_coco_dataset(imageFolder, fishnetLayer, annotationLayer, annotation
                 mbr_clip = np.clip(mbr, 0, None)
                 mbr_clip[2] = min(mbr_clip[2], perimeter['image_width'])
                 mbr_clip[3] = min(mbr_clip[3], perimeter['image_height'])
-                if mbr_clip[2]-mbr_clip[0] < 0.1 or mbr_clip[3] - mbr_clip[1] < 0.1:
+                if mbr_clip[2]-mbr_clip[0] < 0.1 or mbr_clip[3]-mbr_clip[1] < 0.1:
                     continue
                 
                 # convert to XYWH format
                 mbr[2] -= mbr[0]
                 mbr[3] -= mbr[1]
+
+                # area: shoelace formula
+                # (https://stackoverflow.com/questions/24467972/calculate-area-of-polygon-given-x-y-coordinates)
+                polyArea = 0.5*np.abs(np.dot(poly[:,0],np.roll(poly[:,1],1))-np.dot(poly[:,1],np.roll(poly[:,0],1)))
 
                 # flatten polygon into x,y-alternating pairs
                 poly = poly.ravel().tolist()
@@ -278,7 +283,7 @@ def generate_coco_dataset(imageFolder, fishnetLayer, annotationLayer, annotation
                     'category_id': perimeter['labels'][aIdx],
                     'bbox': mbr,
                     'segmentation': [poly],
-                    # 'area': 0,
+                    'area': polyArea,
                     'iscrowd': 0
                 })
     

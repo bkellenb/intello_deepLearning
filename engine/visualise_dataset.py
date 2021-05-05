@@ -6,7 +6,6 @@ import os
 import argparse
 import numpy as np
 
-from torchvision.transforms import ToPILImage
 import matplotlib.pyplot as plt
 
 from detectron2 import config
@@ -15,6 +14,8 @@ from detectron2.data.datasets import register_coco_instances
 from detectron2.utils.visualizer import Visualizer
 
 import rasterio
+
+from engine import util
 
 
 def loadDataset(cfg, split='train'):
@@ -35,10 +36,8 @@ def visualise(cfg, split='train'):
 
     for item in datasetDict:
 
-        # load image
-        with rasterio.open(item['file_name']) as f:
-            image = f.read().astype(np.float32)
-        image = image / image.max() * 255       #TODO
+        # load and visualise image
+        image = util.loadImage(item['file_name'])
         
         v = Visualizer(image[:3,:,:].astype(np.uint8).transpose(1,2,0), MetadataCatalog.get(dsName), scale=1.2)
         out = v.draw_dataset_dict(item)
@@ -49,7 +48,7 @@ def visualise(cfg, split='train'):
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Train Detectron2 models.')
+    parser = argparse.ArgumentParser(description='Visualise COCO dataset.')
     parser.add_argument('--config', type=str, default='projects/solarPanels/configs/base_solarPanels.yaml',
                         help='Path to the config.yaml file to use on this machine.')
     parser.add_argument('--split', type=str, default='train',
