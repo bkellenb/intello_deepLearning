@@ -13,8 +13,6 @@ from detectron2.data.catalog import DatasetCatalog, MetadataCatalog
 from detectron2.data.datasets import register_coco_instances
 from detectron2.utils.visualizer import Visualizer
 
-import rasterio
-
 from engine import util
 
 
@@ -34,15 +32,19 @@ def visualise(cfg, split='train'):
     datasetDict = loadDataset(cfg, split)
     dsName = cfg.DATASETS.NAME + '_' + split
 
-    for item in datasetDict:
+    for idx, item in enumerate(datasetDict):
 
         # load and visualise image
-        image = util.loadImage(item['file_name'])
+        image, extent = util.loadImage(item['file_name'], 65535, True)
+
+        title = f'[{idx+1}/{len(datasetDict)}] ' + item['file_name'] + ' ({:.2f}, {:.2f})'.format(\
+            (extent[0][0]+extent[2][0])/2, (extent[1][1]+extent[0][1])/2)
+        print(title)
         
-        v = Visualizer(image[:3,:,:].astype(np.uint8).transpose(1,2,0), MetadataCatalog.get(dsName), scale=1.2)
+        v = Visualizer(image[:3,:,:].transpose(1,2,0), MetadataCatalog.get(dsName), scale=1.2)
         out = v.draw_dataset_dict(item)
         plt.imshow(out.get_image()[:, :, ::-1])
-        plt.title(item['file_name'])
+        plt.title(title)
         plt.waitforbuttonpress()
 
 

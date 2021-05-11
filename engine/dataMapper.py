@@ -11,6 +11,7 @@ import torch
 import detectron2.data.transforms as T
 from detectron2.data import detection_utils as utils
 import rasterio
+import rasterio.features
 
 
 class MultibandMapper:
@@ -41,6 +42,7 @@ class MultibandMapper:
         with rasterio.open(dataset_dict['file_name']) as f:
             image = f.read().astype(np.float32) / self.normalisation_value
             image = np.transpose(image, (1,2,0))
+            coords = next(rasterio.features.shapes(f.dataset_mask(), transform=f.transform))[0]['coordinates']
         
         auginput = T.AugInput(image)
         transform = self.transform(auginput)
@@ -53,6 +55,8 @@ class MultibandMapper:
             # create the format that the model expects
             'image': image,
             'image_id': dataset_dict['image_id'],
+            'image_coords': coords[0],
             'file_name': dataset_dict['file_name'],
+            'annotations': annos,
             'instances': utils.annotations_to_instances(annos, image.shape[1:])
         }

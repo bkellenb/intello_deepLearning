@@ -9,8 +9,6 @@ import os
 import argparse
 import glob
 from detectron2.data.build import build_detection_test_loader
-import numpy as np
-from tqdm import tqdm
 import matplotlib.pyplot as plt
 
 import torch
@@ -18,7 +16,7 @@ import torch
 from detectron2 import config
 from detectron2.data.catalog import DatasetCatalog, MetadataCatalog
 from detectron2.data.datasets import register_coco_instances
-from detectron2.utils.visualizer import Visualizer
+from detectron2.utils.visualizer import Visualizer, ColorMode
 
 from engine import util
 from engine.dataMapper import MultibandMapper
@@ -64,16 +62,30 @@ def predict(cfg, dataLoader, model, evaluate=False, visualise=False):
 
     dsName = cfg.DATASETS.NAME+'_train'
 
-    for idx, data in enumerate(tqdm(dataLoader)):
+    for idx, data in enumerate(dataLoader):
         with torch.no_grad():
             pred = model(data)
 
         if visualise:
             img_vis = (data[0]['image'][:3,:,:].permute(1,2,0) * 255).type(torch.uint8)
-            v = Visualizer(img_vis, MetadataCatalog.get(dsName), scale=1.2)
-            out = v.draw_instance_predictions(pred[0]['instances'].to('cpu'))
-            plt.imshow(out.get_image()[:, :, ::-1])
-            plt.title(data[0]['file_name'])
+            v_gt = Visualizer(img_vis, MetadataCatalog.get(dsName), scale=1.0, instance_mode=ColorMode.IMAGE_BW)
+            out_gt = v_gt.draw_dataset_dict(data[0])
+            v_pred = Visualizer(img_vis, MetadataCatalog.get(dsName), scale=1.0, instance_mode=ColorMode.IMAGE_BW)
+            out_pred = v_pred.draw_instance_predictions(pred[0]['instances'].to('cpu'))
+
+            extent = data[0]['image_coords']
+            loc = ((extent[0][0]+extent[2][0])/2, (extent[1][1]+extent[0][1])/2)
+            title = f'[{idx+1}/{len(dataLoader)}] ' + data[0]['file_name'] + ' ({:.2f}, {:.2f})'.format(*loc)
+            print(title)
+
+            plt.subplot(1,2,1)
+            plt.imshow(out_gt.get_image()[:, :, ::-1])
+            plt.title('ground truth')
+
+            plt.subplot(1,2,2)
+            plt.imshow(out_pred.get_image()[:, :, ::-1])
+            plt.title('prediction')
+            plt.suptitle(title)
             plt.waitforbuttonpress()
 
 
@@ -111,6 +123,8 @@ if __name__ == '__main__':
         print(f'\tImage folder:\t\t\t"{args.image_folder}"')
     else:
         cfg.SOLVER.IMS_PER_BATCH = 1
+        if args.split != 'train':
+            load_config_dataset(cfg, split='train')     # register dataset for metadata
         dataset = load_config_dataset(cfg, args.split)
         print(f'\tdataset:\t\t"{cfg.DATASETS.NAME}", split: {args.split}, no. images: {len(dataset)}')
         print(f'\tevaluate:\t\t{bool(args.evaluate)}')

@@ -9,6 +9,7 @@ import math
 import numpy as np
 
 import rasterio
+import rasterio.features
 import torch
 import torch.nn as nn
 from torch.nn.parallel import DistributedDataParallel
@@ -106,8 +107,11 @@ def loadModel(cfg, resume=True):
 
 
 
-def loadImage(filePath):
+def loadImage(filePath, normalisation_value=1, makeUint8=False):
     with rasterio.open(filePath) as f:
         image = f.read().astype(np.float32)
-    image = image / 65535 * 255       #TODO
-    return image
+        coords = next(rasterio.features.shapes(f.dataset_mask(), transform=f.transform))[0]['coordinates'][0]
+    image = image / normalisation_value
+    if makeUint8:
+        image = (image * 255).astype(np.uint8)
+    return image, coords
