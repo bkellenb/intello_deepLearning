@@ -20,6 +20,7 @@ import torchvision.transforms as T      # transformations that can be used e.g. 
 
 from tqdm import trange                 # this gives us a nice progress bar
 
+import matplotlib.pyplot as plt         # for visualizing predictions
 
 
 
@@ -248,8 +249,7 @@ def setup_optimizer(model, learning_rate, weight_decay):
     optimizer = torch.optim.SGD(
         model.parameters(),         # tell the optimizer which parameters to fine-tune
         lr=learning_rate,
-        weight_decay=weight_decay,
-        momentum=0.9                # standard value for SGD; you can customize this too if you want
+        weight_decay=weight_decay
     )
     return optimizer
 
@@ -382,7 +382,7 @@ def training_epoch(dataLoader, model, optimizer, scheduler, device):
 # don't perform any training, but calculate how accurate the model is for each
 # image. So we don't need an optimizer, nor a scheduler.
 
-def validation_epoch(dataLoader, model, device):
+def validation_epoch(dataLoader, model, device, visualize=False):
 
     # Put model into evaluation mode. Here, BatchNorm takes the learnt
     # statistics, any existing Dropout is disabled, etc.
@@ -415,18 +415,16 @@ def validation_epoch(dataLoader, model, device):
             # forward pass
             pred = model(data)
 
-            # #TODO
-            # import matplotlib
-            # matplotlib.use('TkAgg')
-            # import matplotlib.pyplot as plt
-            # plt.figure(1)
-            # plt.subplot(1,2,1)
-            # plt.imshow(pred.argmax(1)[0,...].cpu().numpy())
-            # plt.draw()
-            # plt.subplot(1,2,2)
-            # plt.imshow(labels[0,...].cpu().numpy())
-            # plt.draw()
-            # plt.waitforbuttonpress()
+            # visualize predictions and ground truth side-by-side if needed
+            if visualize:
+                plt.figure(1)
+                plt.subplot(1,2,1)
+                plt.imshow(pred.argmax(1)[0,...].cpu().numpy())
+                plt.draw()
+                plt.subplot(1,2,2)
+                plt.imshow(labels[0,...].cpu().numpy())
+                plt.draw()
+                plt.waitforbuttonpress()
 
             # loss value
             loss = criterion(pred, labels)
@@ -476,7 +474,7 @@ def validation_epoch(dataLoader, model, device):
 #
 # Let's define our main function that does all of that.
 
-def main(data_root, batch_size, device, learning_rate, weight_decay, scheduler_milestones, scheduler_gamma, num_epochs, save_dir):
+def main(data_root, batch_size, device, learning_rate, weight_decay, scheduler_milestones, scheduler_gamma, num_epochs, save_dir, visualize=False):
 
     # initialize training and validation data loaders
     dl_train = load_dataset(data_root, 'train', batch_size)
@@ -495,6 +493,7 @@ def main(data_root, batch_size, device, learning_rate, weight_decay, scheduler_m
 
     # load saved state if exists
     saveStates = os.listdir(save_dir)
+    os.makedirs(save_dir, exist_ok=True)
     if len(saveStates):
         latest = max([int(s.replace('.pt', '')) for s in saveStates])
         state = torch.load(open(os.path.join(save_dir, f'{latest}.pt'), 'rb'), map_location='cpu')
@@ -519,7 +518,7 @@ def main(data_root, batch_size, device, learning_rate, weight_decay, scheduler_m
         loss_train = training_epoch(dl_train, model, optimizer, scheduler, device)
 
         # validate
-        loss_val, oa_val = validation_epoch(dl_val, model, device)
+        loss_val, oa_val = validation_epoch(dl_val, model, device, visualize)
 
         # save model parameters and statistics to file
         params = {
@@ -571,6 +570,8 @@ if __name__ == '__main__':
                         help='Number of epochs to train for (default: 50)')
     parser.add_argument('--save_dir', type=str, default='cnn_states',
                         help='Directory to save model states into')
+    parser.add_argument('--visualize', type=int, default=0,
+                        help='Whether to visualize predictions during validation (default: 0)')
     args = parser.parse_args()
 
     os.makedirs(args.save_dir, exist_ok=True)
@@ -584,5 +585,6 @@ if __name__ == '__main__':
         args.milestones,
         args.gamma,
         args.num_epochs,
-        args.save_dir
+        args.save_dir,
+        bool(args.visualize)
     )
