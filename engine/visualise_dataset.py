@@ -35,7 +35,7 @@ def visualise(cfg, split='train'):
     for idx, item in enumerate(datasetDict):
 
         # load and visualise image
-        image, extent = util.loadImage(item['file_name'], 65535, True)
+        image, extent = util.loadImage(item['file_name'], 255, True)      #TODO: normalizer
 
         title = f'[{idx+1}/{len(datasetDict)}] ' + item['file_name'] + ' ({:.2f}, {:.2f})'.format(\
             (extent[0][0]+extent[2][0])/2, (extent[1][1]+extent[0][1])/2)
