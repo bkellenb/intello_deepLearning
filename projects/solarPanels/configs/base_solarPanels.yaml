@@ -4,7 +4,7 @@ DATALOADER:
   FILTER_EMPTY_ANNOTATIONS: false
 DATASETS:
   NAME: "solar_panels"
-  DATA_ROOT: "/data/datasets/INTELLO/solarPanels"
+  DATA_ROOT: "/data/datasets/INTELLO/solarPanels/patches_224x224"
 SOLVER:
   BASE_LR: 0.001
   IMS_PER_BATCH: 2
@@ -24,7 +24,7 @@ MODEL:
 INPUT:
   NUM_INPUT_CHANNELS: 3
   NORMALISATION: 255
-  IMAGE_SIZE: [800, 600]
+  IMAGE_SIZE: [224, 224]
 AUGMENTATION:
   - NAME: "RandomBrightness"
     KWARGS:

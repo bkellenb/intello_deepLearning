@@ -25,11 +25,11 @@ These inputs are then used to create a dataset of images (default size 800x600) 
 
 ```bash
 
-    python projects/solarPanels/dataset/datasetCreation.py --image_source https://geoservices.wallonie.be/arcgis/services/IMAGERIE/ORTHO_2020/MapServer/WMSServer \
+    python projects/solarPanels/dataset/create_dataset_fishnet.py --image_source https://geoservices.wallonie.be/arcgis/services/IMAGERIE/ORTHO_2020/MapServer/WMSServer \
                                                             --fishnet_file path/to/fishnet.shp \
                                                             --anno_file path/to/solarPanels.shp \
                                                             --anno_field Type \
-                                                            --dest_folder path/to/destination \
+                                                            --dest_folder path/to/images \
                                                             --train_frac 0.6 \
                                                             --val_frac 0.1 \
                                                             --srs EPSG:31370 \
@@ -37,6 +37,38 @@ These inputs are then used to create a dataset of images (default size 800x600) 
                                                             --image_size 800 600 \
                                                             --image_format image/tiff;
 ```
+
+Next, we split the images up into smaller patches and center five of them around
+each polygon with a jitter of 25 pixels in x and y direction, and complement the
+dataset by also cropping five patches at random in each image:
+
+```bash
+
+  python projects/solarPanels/dataset/create_dataset_fishnet.py --image_folder path/to/images \
+                                                            --annotation_file path/to/images/train.json \
+                                                            --dest_folder path/to/patches \
+                                                            --patch_size 224 224 \
+                                                            --num_patches_random 5 \
+                                                            --num_patches_per_annotation 5 \
+                                                            --jitter 25 25;
+
+  python projects/solarPanels/dataset/create_dataset_fishnet.py --image_folder path/to/images \
+                                                            --annotation_file path/to/images/val.json \
+                                                            --dest_folder path/to/patches \
+                                                            --patch_size 224 224 \
+                                                            --num_patches_random 5 \
+                                                            --num_patches_per_annotation 5 \
+                                                            --jitter 25 25;
+
+  python projects/solarPanels/dataset/create_dataset_fishnet.py --image_folder path/to/images \
+                                                            --annotation_file path/to/images/test.json \
+                                                            --dest_folder path/to/patches \
+                                                            --patch_size 224 224 \
+                                                            --num_patches_random 5 \
+                                                            --num_patches_per_annotation 5 \
+                                                            --jitter 25 25;
+```
+
 
 
 ### 2. Train models

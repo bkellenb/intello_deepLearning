@@ -20,95 +20,13 @@ import numpy as np
 from tqdm import tqdm
 from osgeo import gdal
 import rasterio
-from rasterio import mask, MemoryFile
 import shapefile
-import geojson
-from owslib.wms import WebMapService
+
+from projects.solarPanels.dataset import FIELD_NAME_VALUES, DataSource, WMSSource
 
 
 
-FIELD_NAME_VALUES = {
-    'Type': {
-        1: 'unknown',
-        2: 'electricity',
-        3: 'warm water'
-    },
-    'Loca': {
-        1: 'on ground',
-        2: 'on roof'
-    }
-}
-
-
-
-class DataSource:
-
-    def __init__(self, source):
-        self.source = rasterio.open(source)
-    
-    def __del__(self):
-        self.source.close()
-    
-    def crop(self, extent):
-        out_img, out_transform = mask.mask(self.source, [geojson.Polygon([[
-            [extent[0], extent[1]],
-            [extent[2], extent[1]],
-            [extent[2], extent[3]],
-            [extent[0], extent[3]],
-            [extent[0], extent[1]]
-        ]])], crop=True)
-        return out_img, out_transform, self.source.meta
-
-
-class WMSSource:
-
-    def __init__(self, wmsURL, wmsMeta):
-        self.wms = WebMapService(wmsURL)
-
-        # check WMS meta data
-        for key in ('srs', 'size', 'format'):
-            assert key in wmsMeta, f'Missing WMS metadata entry "{key}".'
-        self.layers = wmsMeta.get('layers', None)
-        if self.layers is None:
-            # choose all layers
-            self.layers = self.wms.contents
-        self.srs = wmsMeta['srs']
-        self.imageSize = wmsMeta['size']
-        self.imageFormat = wmsMeta['format']
-    
-    def crop(self, extent):
-        img = None
-        attempt = 0
-        while img is None and attempt < 5:
-            if attempt > 0:
-                print(f'Attempt {attempt+1}/5...')
-            try:
-                img = self.wms.getmap(
-                    layers = self.layers,
-                    bbox = tuple(extent),
-                    size = self.imageSize,
-                    srs = self.srs,
-                    format=self.imageFormat
-                )
-            except:
-                img = None
-        with MemoryFile(img) as memfile:
-            with memfile.open() as dataset:
-                out_img = dataset.read()
-
-                # need to define custom affine matrix
-                trArgs = copy.deepcopy(extent)
-                trArgs.extend(self.imageSize)
-                transform = rasterio.transform.from_bounds(*trArgs)
-
-                meta = copy.deepcopy(dataset.meta)
-                meta['transform'] = transform
-
-                return out_img, transform, dataset.meta
-
-
-
-def generate_coco_dataset(imageSource, fishnetLayer, annotationLayer, annotationField, destFolder, fractions=(0.6, 0.1, 0.3), force=False, wmsMeta=None):
+def generate_coco_dataset_fishnet(imageSource, fishnetLayer, annotationLayer, annotationField, destFolder, fractions=(0.6, 0.1, 0.3), force=False, wmsMeta=None):
     '''
         Reads an ESRI Shapefile containing fishnet polygons and assigns
         them into one of the train/val/test sets. Assignment is performed
@@ -170,7 +88,8 @@ def generate_coco_dataset(imageSource, fishnetLayer, annotationLayer, annotation
             # assigned annotations
             'geometries': [],
             'labels': [],
-            'annotationIDs': []
+            'annotationIDs': [],
+            'annotationIDs_orig': set()
         }
 
         # create image from perimeter
@@ -224,7 +143,7 @@ def generate_coco_dataset(imageSource, fishnetLayer, annotationLayer, annotation
             matchY = coordsY[np.argmin(distY)]
             perimeter = perimeters[matchX][matchY]
 
-            if id in perimeter['annotationIDs']:
+            if id in perimeter['annotationIDs_orig']:
                 # polygon has already been assigned to this perimeter
                 continue
 
@@ -239,6 +158,7 @@ def generate_coco_dataset(imageSource, fishnetLayer, annotationLayer, annotation
 
             # append
             annoID = f'{id}_{cIdx}'     # need to assign new unique ID since same polygon gets split potentially multiple times
+            perimeters[matchX][matchY]['annotationIDs_orig'].add(id)
             perimeters[matchX][matchY]['annotationIDs'].append(annoID)
             perimeters[matchX][matchY]['geometries'].append(poly)
             perimeters[matchX][matchY]['labels'].append(label)
@@ -297,7 +217,7 @@ def generate_coco_dataset(imageSource, fishnetLayer, annotationLayer, annotation
             else:
                 hist[-1] = 1
             
-            setIdx = np.argmax(np.sum((numAnno_target - numAnno_current) - hist, 1))
+            setIdx = np.argmax(np.sum((numAnno_target - numAnno_current) / numAnno_target * hist, 1))
             numAnno_current[setIdx,:] += hist
 
 
@@ -415,9 +335,5 @@ if __name__ == '__main__':
             'format': args.image_format
         }
 
-    # #TODO:WMS
-    #  wmsLayers, srs='EPSG:31370', imageSize=(800, 600), imageFormat='image/tiff')   #TODO: hyperparameters
-
-
-    generate_coco_dataset(imageSource,
+    generate_coco_dataset_fishnet(imageSource,
                             args.fishnet_file, args.anno_file, args.anno_field, args.dest_folder, fractions, bool(args.force), wmsMeta)
