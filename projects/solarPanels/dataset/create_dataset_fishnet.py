@@ -16,9 +16,9 @@ import glob
 import shutil
 import json
 import numpy as np
+import cv2
 
 from tqdm import tqdm
-from osgeo import gdal
 import rasterio
 import shapefile
 
@@ -26,7 +26,7 @@ from projects.solarPanels.dataset import FIELD_NAME_VALUES, DataSource, WMSSourc
 
 
 
-def generate_coco_dataset_fishnet(imageSource, fishnetLayer, annotationLayer, annotationField, destFolder, fractions=(0.6, 0.1, 0.3), force=False, wmsMeta=None):
+def generate_coco_dataset_fishnet(imageSources, fishnetLayer, annotationLayer, annotationField, destFolder, imageSize, fractions=(0.6, 0.1, 0.3), force=False):
     '''
         Reads an ESRI Shapefile containing fishnet polygons and assigns
         them into one of the train/val/test sets. Assignment is performed
@@ -37,9 +37,10 @@ def generate_coco_dataset_fishnet(imageSource, fishnetLayer, annotationLayer, an
         val/test splits.
 
         Inputs:
-        - "imageSource": path to TIFF image, VRT file, WMS server, etc.
+        - "imageSources": single or list of paths to TIFF image, VRT file, WMS server (dict with URL and metadata), etc.
         - "fishnetLayer": path to an ESRI Shapefile containing fishnet polygons
-        - "destFile": output path to which the split CSV file should be saved
+        - "destFolder": output path the dataset should be saved to
+        - "imageSize": tuple of (width, height) for target image size
         - "fractions": tuple of train, val, test set fractions
         - "wmsMeta": dict of WMS metadata if "imageSource" is a WMS URL
     '''
@@ -55,14 +56,22 @@ def generate_coco_dataset_fishnet(imageSource, fishnetLayer, annotationLayer, an
             import sys
             sys.exit(0)
 
+    if not isinstance(imageSize, tuple):
+        imageSize = tuple(imageSize)
+
     print('Reading and cropping orthoimages...')
     os.makedirs(imgFolderPath, exist_ok=True)
 
-    # open image source
-    if os.path.exists(imageSource):
-        img = DataSource(imageSource)
-    else:
-        img = WMSSource(imageSource, wmsMeta)
+    # open image sources
+    imgs = []
+    if isinstance(imageSources, str):
+        imageSources = (imageSources,)
+    for imageSource in imageSources:
+        if imageSource['type'] == 'WMS':
+            img = WMSSource(imageSource['url'], imageSource['wms_meta'])
+        else:
+            img = DataSource(imageSource['path'])
+        imgs.append(img)
 
     
     # load annotation fishnet into custom spatial index, also clip and create images
@@ -92,14 +101,39 @@ def generate_coco_dataset_fishnet(imageSource, fishnetLayer, annotationLayer, an
             'annotationIDs_orig': set()
         }
 
-        # create image from perimeter
+        # create image from perimeter: compose in sources order
         destImagePath = os.path.join(destFolder, 'images', f'{id}.tif')
         
-        out_img, out_transform, out_meta = img.crop(pCoords)
+        out_img, out_transform, out_meta = None, None, None
+
+        for img in imgs:
+            img_i, img_t, img_m = img.crop(pCoords)
+
+            img_i = np.transpose(img_i, (1,2,0)).astype(np.uint8)
+
+            sz = img_i.shape
+            if sz[0] != imageSize[1] or sz[1] != imageSize[0]:
+                # resize and adjust scaling of transform
+                img_i = cv2.resize(img_i, imageSize, interpolation=cv2.INTER_CUBIC)
+                img_t *= img_t.scale(sz[0]/imageSize[1], sz[1]/imageSize[0])
+            
+            if img_i.ndim == 2:
+                img_i = img_i[...,np.newaxis]
+
+            # append
+            if out_img is None:
+                out_transform = img_t
+                out_meta = img_m
+                out_img = img_i.astype(out_meta.get('dtype', 'float32'))
+            else:
+                out_img = np.concatenate((out_img, img_i), -1)
 
         if out_img.sum() < 1:
             print(f'WARNING: all-zero image at perimeter "{p.shape.bbox}"; skipping patch and polygon extraction for this area...')
             continue
+
+        # transpose back
+        out_img = np.transpose(out_img, (2,0,1))
 
         # update metadata
         perimeters[pCoords[0]][pCoords[1]]['file_name'] = destImagePath
@@ -111,6 +145,7 @@ def generate_coco_dataset_fishnet(imageSource, fishnetLayer, annotationLayer, an
         out_meta.update({'driver': 'GTiff',
                             'width': out_img.shape[2],
                             'height': out_img.shape[1],
+                            'count': out_img.shape[0],
                             'transform': out_transform})
         with rasterio.open(destImagePath, 'w', **out_meta) as dest_img:
             dest_img.write(out_img)
@@ -279,8 +314,8 @@ def generate_coco_dataset_fishnet(imageSource, fishnetLayer, annotationLayer, an
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Create train/val/test split file from fishnet polygons.')
-    parser.add_argument('--image_source', type=str, default='https://geoservices.wallonie.be/arcgis/services/IMAGERIE/ORTHO_2020/MapServer/WMSServer',  #'https://geoservices.wallonie.be/arcgis/services/IMAGERIE/ORTHO_2020/MapServer/WMSServer',     #'/data/datasets/INTELLO/ORTHOS_2019/TIFF/orthoimages.vrt',
-                        help='Source for the raster images. Can be an image folder (for which a VRT is being created), a TIFF image, a VRT, a WMS URL, etc.')
+    parser.add_argument('--image_sources', type=str, default='projects/solarPanels/dataset/image_sources.json',
+                        help='Path to a JSON file defining the image sources (directories of TIFF files, VRTs; WMS definitions, etc.)')
     parser.add_argument('--fishnet_file', type=str, default='datasets/solarPanels/annotations/fishnet_Wallonie_200_150m_30_4_2021_BK.shp',
                         help='Path to the fishnet layer (ESRI Shapefile) that contains perimeter polygons')
     parser.add_argument('--anno_file', type=str, default='datasets/solarPanels/annotations/SAMPLES_0_SolarPanels_30_4_2021_BK.shp',
@@ -289,22 +324,14 @@ if __name__ == '__main__':
                         help='Name of the attribute field of the annotation layer that determines the object class')
     parser.add_argument('--dest_folder', type=str, default='/data/datasets/INTELLO/solarPanels',
                         help='Destination directory to save patches and annotations (COCO format) into')
+    parser.add_argument('--image_size', type=int, nargs=2, default=[800, 600],
+                        help='Output image size in pixels; width and height (default: [800, 600])')
     parser.add_argument('--train_frac', type=float, default=0.6,
                         help='Training set fraction (default: 0.6)')
     parser.add_argument('--val_frac', type=float, default=0.1,
                         help='Validation set fraction (default: 0.1)')
     parser.add_argument('--force', type=int, default=1,
                         help='If 1, the dataset is forcefully being recreated (otherwise creation is skipped if image folder exists)')
-    
-    # WMS arguments
-    parser.add_argument('--layers', type=str, nargs='?', default=[],
-                        help='For WMS source: Name of WMS layers to query (default: [] for all available layers)')
-    parser.add_argument('--srs', type=str, default='EPSG:31370',
-                        help='For WMS source: Spatial Reference System EPSG code (default: "EPSG:31370")')
-    parser.add_argument('--image_size', type=int, nargs=2, default=[800, 600],
-                        help='For WMS source: image width and height (default: [800, 600])')
-    parser.add_argument('--image_format', type=str, default='image/tiff',
-                        help='For WMS source: image format (default: "image/tiff")')
 
     args = parser.parse_args()
 
@@ -313,27 +340,8 @@ if __name__ == '__main__':
     fractions[1] = min(fractions[1], 1 - fractions[0])
     fractions.append(max(0, 1 - sum(fractions)))
 
-    # parse image source
-    imageSource = args.image_source
-    wmsMeta = None
-    if os.path.isdir(imageSource):
-        # image folder; create VRT
-        vrtPath = os.path.join(imageSource, 'orthoimages.vrt')
-        if not os.path.isfile(vrtPath):
-            print(f'INFO: found image folder; creating VRT file "{vrtPath}".')
-            orthoimages = glob.glob(os.path.join(imageSource, '**/*.tif'))
-            orthoVRT = gdal.BuildVRT(vrtPath, orthoimages)
-            orthoVRT.FlushCache()
-        imageSource = vrtPath
+    # parse image sources
+    imageSources = json.load(open(args.image_sources, 'r'))['sources']
 
-    elif not os.path.exists(imageSource):
-        # no local file; assume WMS source
-        wmsMeta = {
-            'layers': args.layers,
-            'srs': args.srs,
-            'size': args.image_size,
-            'format': args.image_format
-        }
-
-    generate_coco_dataset_fishnet(imageSource,
-                            args.fishnet_file, args.anno_file, args.anno_field, args.dest_folder, fractions, bool(args.force), wmsMeta)
+    generate_coco_dataset_fishnet(imageSources,
+                            args.fishnet_file, args.anno_file, args.anno_field, args.dest_folder, args.image_size, fractions, bool(args.force))

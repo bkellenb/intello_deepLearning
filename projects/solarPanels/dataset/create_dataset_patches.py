@@ -12,8 +12,10 @@ from collections.abc import Iterable
 from sys import meta_path
 import numpy as np
 from tqdm import tqdm
-from PIL import Image
 from osgeo import ogr
+import cv2
+
+from engine import util
 
 
 def split_coco_dataset_patches(imageFolder, annotationFile, destinationFolder, patchSize, numPatchesRandom=5, numPatchesPerAnnotation=1, jitter=(0, 0), minAnnoSize=500, force=False):
@@ -27,7 +29,7 @@ def split_coco_dataset_patches(imageFolder, annotationFile, destinationFolder, p
     destFile_meta = os.path.join(destinationFolder, metaName)
     if os.path.exists(destFile_meta):
         if force:
-            print(f'Annotation file "{destFile_meta}" found and force recreation selected; deleting folder...')
+            print(f'Annotation file "{destFile_meta}" found and force recreation selected; deleting...')
             os.remove(destFile_meta)
         else:
             print(f'Annotation file "{destFile_meta}" already exists, aborting...')
@@ -137,15 +139,16 @@ def split_coco_dataset_patches(imageFolder, annotationFile, destinationFolder, p
     for ii in tqdm(meta['images']):
         
         # load image
-        img = Image.open(os.path.join(imageFolder, ii['file_name']))
+        # img = cv2.imread(os.path.join(imageFolder, ii['file_name']), cv2.IMREAD_UNCHANGED)
+        img, _ = util.loadImage(os.path.join(imageFolder, ii['file_name']), 1, False)
 
         annotations = annos.get(ii['id'], [])
 
         # crop at random
         for _ in range(numPatchesRandom):
             centre = [
-                np.random.randint(halfPatch[0], img.width-halfPatch[0]),
-                np.random.randint(halfPatch[1], img.height-halfPatch[1])
+                np.random.randint(halfPatch[0], img.shape[2]-halfPatch[0]),
+                np.random.randint(halfPatch[1], img.shape[1]-halfPatch[1])
             ]
             extent = (
                 centre[0] - halfPatch[0],
@@ -155,15 +158,16 @@ def split_coco_dataset_patches(imageFolder, annotationFile, destinationFolder, p
             )
 
             # crop and save image
-            img_crop = img.crop(extent)
+            img_crop = img[:, extent[1]:extent[3], extent[0]:extent[2]]
             _, ext = os.path.splitext(ii['file_name'])
             fileName_out = os.path.join(destinationFolder, f'{iidx}{ext}')
-            img_crop.save(fileName_out)
+            util.saveImage(img_crop, fileName_out, {'driver': 'GTiff', 'dtype': str(img_crop.dtype)})
+            # cv2.imwrite(fileName_out, img_crop)
             meta_out['images'].append({
                 'id': iidx,
                 'file_name': fileName_out,
-                'width': img_crop.width,
-                'height': img_crop.height
+                'width': img_crop.shape[2],
+                'height': img_crop.shape[1]
             })
 
             # shift, crop and append all annotations that fall within boundaries
@@ -198,8 +202,8 @@ def split_coco_dataset_patches(imageFolder, annotationFile, destinationFolder, p
                         centre[1] = np.random.randint(minJitterY, maxJitterY)
                     
                     # limit centre to image bounds
-                    centre[0] = min(max(halfPatch[0], centre[0]), img.width - halfPatch[0])
-                    centre[1] = min(max(halfPatch[1], centre[1]), img.height - halfPatch[1])
+                    centre[0] = min(max(halfPatch[0], centre[0]), img.shape[2] - halfPatch[0])
+                    centre[1] = min(max(halfPatch[1], centre[1]), img.shape[1] - halfPatch[1])
 
                     extent = (
                         centre[0] - halfPatch[0],
@@ -209,15 +213,16 @@ def split_coco_dataset_patches(imageFolder, annotationFile, destinationFolder, p
                     )
 
                     # crop and save image
-                    img_crop = img.crop(extent)
+                    img_crop = img[:, extent[1]:extent[3], extent[0]:extent[2]]
                     _, ext = os.path.splitext(ii['file_name'])
                     fileName_out = os.path.join(destinationFolder, f'{iidx}{ext}')
-                    img_crop.save(fileName_out)
+                    util.saveImage(img_crop, fileName_out)
+                    # cv2.imwrite(fileName_out, img_crop)
                     meta_out['images'].append({
                         'id': iidx,
                         'file_name': fileName_out,
-                        'width': img_crop.width,
-                        'height': img_crop.height
+                        'width': img_crop.shape[2],
+                        'height': img_crop.shape[1]
                     })
 
                     # shift, crop and append all annotations that fall within boundaries

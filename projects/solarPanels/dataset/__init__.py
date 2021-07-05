@@ -54,6 +54,10 @@ class WMSSource:
         if self.layers is None or not len(self.layers):
             # choose all layers
             self.layers = self.wms.contents
+        elif not isinstance(self.layers, list):
+            self.layers = [self.layers]
+        elif isinstance(self.layers, tuple):
+            self.layers = list(self.layers)
         self.srs = wmsMeta['srs']
         self.imageSize = wmsMeta['size']
         self.imageFormat = wmsMeta['format']
@@ -66,10 +70,10 @@ class WMSSource:
                 print(f'Attempt {attempt+1}/5...')
             try:
                 img = self.wms.getmap(
-                    layers = self.layers,
-                    bbox = tuple(extent),
-                    size = self.imageSize,
-                    srs = self.srs,
+                    layers=self.layers,
+                    bbox=tuple(extent),
+                    size=self.imageSize,
+                    srs=self.srs,
                     format=self.imageFormat
                 )
             except Exception as e:

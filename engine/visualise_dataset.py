@@ -4,9 +4,10 @@
 
 import os
 import argparse
-import numpy as np
 
 import matplotlib.pyplot as plt
+
+import torch
 
 from detectron2 import config
 from detectron2.data.catalog import DatasetCatalog, MetadataCatalog
@@ -32,7 +33,10 @@ def visualise(cfg, split='train'):
     datasetDict = loadDataset(cfg, split)
     dsName = cfg.DATASETS.NAME + '_' + split
 
-    for idx, item in enumerate(datasetDict):
+    order = torch.randperm(len(datasetDict))
+
+    for idx in order:
+        item = datasetDict[idx]
 
         # load and visualise image
         image, extent = util.loadImage(item['file_name'], 255, True)      #TODO: normalizer

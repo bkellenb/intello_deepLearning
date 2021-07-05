@@ -65,7 +65,7 @@ def loadModel(cfg, resume=True):
     except Exception as e:
         print(f'Could not load pre-trained model weights ("{e}").')
 
-    # modify model to accommodate a different number of input bands (if needed)         TODO: only works for Mask R-CNN right now
+    # modify model to accommodate a different number of input bands (if needed)         TODO: only works for Faster R-CNN and Mask R-CNN right now
     if cfg.INPUT.NUM_INPUT_CHANNELS != 3:
         # replicate weights and pixel mean and std
         numRep = math.ceil(cfg.INPUT.NUM_INPUT_CHANNELS / 3)
@@ -115,3 +115,17 @@ def loadImage(filePath, normalisation_value=1, makeUint8=False):
     if makeUint8:
         image = (image * 255).astype(np.uint8)
     return image, coords
+
+
+
+def saveImage(image, filePath, out_meta={}):
+    if 'width' not in out_meta:
+        out_meta['width'] = image.shape[2]
+    if 'height' not in out_meta:
+        out_meta['height'] = image.shape[1]
+    if 'count' not in out_meta:
+        out_meta['count'] = image.shape[0]
+    if 'dtype' not in out_meta:
+        out_meta['dtype'] = str(image.dtype)
+    with rasterio.open(filePath, 'w', **out_meta) as dest_img:
+        dest_img.write(image)
