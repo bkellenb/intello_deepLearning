@@ -34,7 +34,7 @@ rm -f "$dataFolder/images/*.zip"
 
 
 # reproject images to WGS84
-for source in "$dataFolder/images/Stockton" "$dataFolder/images/Oxnard" #"$dataFolder/images/Fresno"
+for source in "$dataFolder/images/Stockton" "$dataFolder/images/Oxnard" "$dataFolder/images/Fresno"
 do 
     imgList="$(ls -1 $source/*.tif)"
     for img in $imgList
@@ -50,12 +50,12 @@ done
 ls -1 "$dataFolder/images/Stockton/"*.tif > "$dataFolder/images/imageList.txt"
 ls -1 "$dataFolder/images/Oxnard/"*.tif > "$dataFolder/images/imageList.txt"
 ls -1 "$dataFolder/images/Fresno/"*.tif > "$dataFolder/images/imageList.txt"
-gdalbuildvrt "$dataFolder/images/all.vrt" -input_file_list "$dataFolder/images/imageList.txt"
+gdalbuildvrt "$dataFolder/images/all_new.vrt" -input_file_list "$dataFolder/images/imageList.txt" -srcnodata 0;
 
 # create datasets of patches
 python projects/solarPanels/dataset/prepare_pretrain_dataset.py --image_source "$dataFolder/images/all.vrt" \
                                                                 --annotation_file "$dataFolder/labels/SolarArrayPolygons.shp" \
                                                                 --dest_folder "$dataFolder/patch_datasets/224x224" \
-                                                                --patch_size 224 224;
-
-#ln -s "$dataFolder/patch_datasets/224x224/SolarArrayPolygons.json" "$dataFolder/patch_datasets/224x224/train.json";
+                                                                --patch_size 224 224 \
+                                                                --jitter 75 75 \
+                                                                --min_area 50;
