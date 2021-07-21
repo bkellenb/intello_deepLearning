@@ -1,5 +1,5 @@
 '''
-    General-purpose routine for training Detectron2 models.
+    Low-end baseline: train a classifier on the solar panels dataset.
 
     2021 Benjamin Kellenberger
 '''
@@ -14,21 +14,81 @@ import torch
 
 import detectron2.utils.comm as comm
 from detectron2.engine import default_writers
-from detectron2.checkpoint import PeriodicCheckpointer
 from detectron2 import config
 from detectron2.data.datasets import register_coco_instances
 from detectron2.data.catalog import DatasetCatalog
 from detectron2.data import build_detection_train_loader, build_detection_test_loader
 import detectron2.data.transforms as T
 from detectron2.solver import build_lr_scheduler, build_optimizer
-from detectron2.evaluation import COCOEvaluator, inference_on_dataset, print_csv_format
 from detectron2.utils.events import EventStorage
 
-from engine import util
 from engine.dataMapper import MultibandMapper
 
 
 logger = logging.getLogger('INTELLO')
+
+
+
+
+
+import torch.nn as nn
+from torchvision.models import resnet
+
+class Model(nn.Module):
+
+    def __init__(self, cfg):
+        super(Model, self).__init__()
+        self.model = resnet.resnet50(pretrained=True)
+        self.model.fc = nn.Linear(2048, cfg.MODEL.ROI_HEADS.NUM_CLASSES+1)
+        self.loss = nn.CrossEntropyLoss()
+
+    def forward(self, data):
+        imgs, labels = [], []
+        for d in data:
+            imgs.append(d['image'])
+            labels.append(1 if len(d['annotations']) else 0)
+        
+        imgs = torch.stack(imgs)[:,:3,:,:].cuda()
+        labels = torch.LongTensor(labels).cuda()
+
+        if self.training:
+            pred = self.model(imgs)
+            loss = self.loss(pred, labels)
+            return {'CE': loss}
+
+        else:
+            with torch.no_grad():
+                return self.model(imgs)
+
+
+
+
+def load_model(cfg, resume=True):
+    os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
+    model = Model(cfg)
+
+    if resume:
+        models = os.listdir(cfg.OUTPUT_DIR)
+        if len(models):
+            modelStates = [int(m.replace('.pt', '')) for m in models]
+            start_iter = max(modelStates)
+            stateDict = torch.load(open(os.path.join(cfg.OUTPUT_DIR, str(start_iter)+'.pt'), 'rb'), map_location='cpu')
+            model.load_state_dict(stateDict['model'])
+        else:
+            start_iter = 0
+    else:
+        start_iter = 0
+    model.cuda()
+    return model, start_iter
+
+
+
+def save_model(cfg, model, iter):
+    stateDict = {'model': model.state_dict()}
+    os.makedirs(cfg.OUTPUT_DIR, exist_ok=True)
+    torch.save(stateDict, open(os.path.join(cfg.OUTPUT_DIR, str(iter)+'.pt'), 'wb'))
+
+
 
 
 def loadDataset(cfg, split='train'):
@@ -66,19 +126,14 @@ def do_train(cfg, model, resume=True):
     print(f'\tdataset:\t\t"{cfg.DATASETS.NAME}", no. batches: {len(dataLoader.dataset)}')
 
     # load model
-    model, checkpointer, start_iter = util.loadModel(cfg, resume)
+    model, start_iter = load_model(cfg)
+
     max_iter = cfg.SOLVER.MAX_ITER
     print(f'\tmodel iter:\t\t{start_iter}/{max_iter}, resume: {resume}')
 
     model.train()
     optimiser = build_optimizer(cfg, model)
     scheduler = build_lr_scheduler(cfg, optimiser)
-
-    periodic_checkpointer = PeriodicCheckpointer(
-        checkpointer, cfg.SOLVER.CHECKPOINT_PERIOD, max_iter=max_iter
-    )
-
-    writers = default_writers(cfg.OUTPUT_DIR, max_iter) if comm.is_main_process() else []
 
     print('\n')
     logger.info(f'Starting training from iteration {start_iter}')
@@ -105,20 +160,16 @@ def do_train(cfg, model, resume=True):
             scheduler.step()
             tBar.update(1)
 
-            if (
-                cfg.TEST.EVAL_PERIOD > 0
-                and (iteration + 1) % cfg.TEST.EVAL_PERIOD == 0
-                and iteration != max_iter - 1
-            ):
-                do_test(cfg, model)
-                comm.synchronize()
-            
-            if iteration - start_iter > 5 and (
-                (iteration + 1) % 20 == 0 or iteration == max_iter - 1
-            ):
-                for writer in writers:
-                    writer.write()
-            periodic_checkpointer.step(iteration)
+            # if (
+            #     cfg.TEST.EVAL_PERIOD > 0
+            #     and (iteration + 1) % cfg.TEST.EVAL_PERIOD == 0
+            #     and iteration != max_iter - 1
+            # ):
+            #     do_test(cfg, model)
+            #     comm.synchronize()
+
+            if iteration > 0 and iteration % cfg.SOLVER.CHECKPOINT_PERIOD == 0:
+                save_model(cfg, model, iteration)
 
 
     tBar.close()
@@ -126,25 +177,14 @@ def do_train(cfg, model, resume=True):
 
 
 def do_test(cfg, model):
-    dataLoader, dsName = loadDataset(cfg, 'val')
-
-    model.eval()
-
-    evaluator = COCOEvaluator(dsName, output_dir=os.path.join(cfg.OUTPUT_DIR, "inference", dsName))
-    results = inference_on_dataset(model, dataLoader, evaluator)
-    if comm.is_main_process():
-        logger.info("Evaluation results for {} in csv format:".format(dsName))
-        print_csv_format(results)
-    if len(results) == 1:
-        results = list(results.values())[0]
-    return results
+    raise NotImplementedError('TODO')
 
 
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='Train Detectron2 models.')
-    parser.add_argument('--config', type=str, default='projects/solarPanels/configs/frcnn_r50.yaml',
+    parser = argparse.ArgumentParser(description='Train baseline classifier.')
+    parser.add_argument('--config', type=str, default='projects/solarPanels/configs/resnet50.yaml',
                         help='Path to the config.yaml file to use on this machine.')
     parser.add_argument('--resume', type=int, default=1,
                         help='Whether to resume model training or start from pre-trained base.')

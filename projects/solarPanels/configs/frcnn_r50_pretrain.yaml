@@ -1,12 +1,12 @@
 _BASE_: base_solarPanels_pretrain.yaml
 SOLVER:
   BASE_LR: 0.01
-  IMS_PER_BATCH: 2
+  IMS_PER_BATCH: 1
   STEPS:
   - 5000
   - 15000
   - 30000
-  MAX_ITER: 90000
+  MAX_ITER: 40000
 OUTPUT_DIR: "cnn_states/solarPanels/pretrain/frcnn_r50"
 MODEL:
   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
