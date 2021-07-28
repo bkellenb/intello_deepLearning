@@ -49,7 +49,7 @@ def split_spatial_dataset_patches(imageSource, annotationFile, destinationFolder
 
     destFile_meta = os.path.join(destinationFolder, 'train.json')
 
-    driver = ogr.GetDriverByName('ESRI Shapefile')      # need SHP driver because GeoJSON one is buggy
+    driver = ogr.GetDriverByName('ESRI Shapefile')      # need SHP driver because the GeoJSON one is buggy
 
     # open image source
     imgSource = DataSource(imageSource)

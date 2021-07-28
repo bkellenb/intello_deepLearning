@@ -67,10 +67,10 @@ def predict(cfg, dataLoader, model, evaluate=False, visualise=False):
             pred = model(data)
 
         if visualise:
-            img_vis = (data[0]['image'][:3,:,:].permute(1,2,0) * 255).type(torch.uint8)
-            v_gt = Visualizer(img_vis, MetadataCatalog.get(dsName), scale=1.0, instance_mode=ColorMode.IMAGE_BW)
+            img_vis = (data[0]['image'][:3,:,:].permute(1,2,0) * cfg.INPUT.NORMALISATION).type(torch.uint8)
+            v_gt = Visualizer(img_vis, MetadataCatalog.get(dsName), scale=2.0, instance_mode=ColorMode.IMAGE_BW)
             out_gt = v_gt.draw_dataset_dict(data[0])
-            v_pred = Visualizer(img_vis, MetadataCatalog.get(dsName), scale=1.0, instance_mode=ColorMode.IMAGE_BW)
+            v_pred = Visualizer(img_vis, MetadataCatalog.get(dsName), scale=2.0, instance_mode=ColorMode.IMAGE_BW)
             out_pred = v_pred.draw_instance_predictions(pred[0]['instances'].to('cpu'))
 
             extent = data[0]['image_coords']
@@ -93,9 +93,9 @@ def predict(cfg, dataLoader, model, evaluate=False, visualise=False):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Predict on dataset or images; (optionally) visualise and/or perform accuracy evaluation.')
-    parser.add_argument('--config', type=str, default='projects/solarPanels/configs/base_solarPanels.yaml',
+    parser.add_argument('--config', type=str, default='projects/channelIslandCT/configs/frcnn_r50.yaml',
                         help='Path to the config.yaml file to use on this machine.')
-    parser.add_argument('--split', type=str, default='test',
+    parser.add_argument('--split', type=str, default='val',
                         help='Which dataset split to perform inference on {"train", "val", "test"}. Ignored if "image_folder" is specified.')
     parser.add_argument('--image_folder', type=str, #default='/data/datasets/INTELLO/solarPanels/images',
                         help='Directory of images to predict on. If not specified, the dataset under "split" in the config file will be used.')

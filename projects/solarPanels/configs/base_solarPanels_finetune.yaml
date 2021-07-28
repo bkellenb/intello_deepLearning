@@ -3,8 +3,8 @@ DATALOADER:
   ASPECT_RATIO_GROUPING: false
   FILTER_EMPTY_ANNOTATIONS: false
 DATASETS:
-  NAME: "solar_panels_pretrain"
-  DATA_ROOT: "/data/datasets/INTELLO/solarPanels_aux/patch_datasets/224x224"
+  NAME: "solar_panels"
+  DATA_ROOT: "/data/datasets/INTELLO/solarPanels_rgb/patches_224x224"
 SOLVER:
   BASE_LR: 0.001
   IMS_PER_BATCH: 2
@@ -12,9 +12,9 @@ SOLVER:
   - 5000
   - 15000
   - 30000
-OUTPUT_DIR: "cnn_states/solarPanels_pretrain"
+OUTPUT_DIR: "cnn_states/solarPanels/finetuned"
 MODEL:
-  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  WEIGHTS: "cnn_states/solarPanels/pretrain"
   MASK_ON: True
   RESNETS:
     DEPTH: 50

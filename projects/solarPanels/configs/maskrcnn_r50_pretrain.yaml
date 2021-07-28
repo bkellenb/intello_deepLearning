@@ -3,13 +3,12 @@ SOLVER:
   BASE_LR: 0.01
   IMS_PER_BATCH: 1
   STEPS:
-  - 40000
   - 80000
-  MAX_ITER: 200000
-OUTPUT_DIR: "cnn_states/solarPanels/pretrain/frcnn_r50"
+  MAX_ITER: 500000
+OUTPUT_DIR: "cnn_states/solarPanels/pretrain/maskrcnn_r50"
 MODEL:
   WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
-  MASK_ON: False
+  MASK_ON: True
   RESNETS:
     DEPTH: 50
   ROI_HEADS:

@@ -9,11 +9,9 @@ import copy
 import argparse
 import json
 from collections.abc import Iterable
-from sys import meta_path
 import numpy as np
 from tqdm import tqdm
 from osgeo import ogr
-import cv2
 
 from engine import util
 
@@ -133,9 +131,12 @@ def split_coco_dataset_patches(imageFolder, annotationFile, destinationFolder, p
         if key not in meta_out:
             meta_out[key] = meta[key]
     
+    # image and annotation indices
+    imgs_existing = util.listImages(destinationFolder, True)
+    iidx = len(imgs_existing)       # offset image index to prevent referencing across sets
+    aidx = 1                        # new index for annotations
+
     # iterate over images & crop
-    iidx = 1        # new image index
-    aidx = 1        # same for annotations
     for ii in tqdm(meta['images']):
         
         # load image

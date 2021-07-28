@@ -47,8 +47,12 @@ def visualise(cfg, split='train'):
         
         v = Visualizer(image[:3,:,:].transpose(1,2,0), MetadataCatalog.get(dsName), scale=1.2)
         out = v.draw_dataset_dict(item)
+        plt.subplot(1,2,1)
+        plt.imshow(image[:3,:,:].transpose(1,2,0))
+        plt.draw()
+        plt.subplot(1,2,2)
         plt.imshow(out.get_image()[:, :, ::-1])
-        plt.title(title)
+        plt.suptitle(title)
         plt.waitforbuttonpress()
 
 

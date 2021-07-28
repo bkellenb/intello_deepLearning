@@ -1,0 +1,14 @@
+{
+    "sources": [
+        {
+            "type": "WMS",
+            "url": "https://geoservices.wallonie.be/arcgis/services/IMAGERIE/ORTHO_2020/MapServer/WMSServer",
+            "wms_meta": {
+                "layers": [],
+                "srs": "EPSG:31370",
+                "size": [800, 600],
+                "format": "image/tiff"
+            }
+        }
+    ]
+}

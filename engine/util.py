@@ -5,6 +5,7 @@
 '''
 
 import os
+import glob
 import math
 import numpy as np
 
@@ -18,6 +19,48 @@ import detectron2.utils.comm as comm
 from detectron2.modeling import build_model
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.layers import FrozenBatchNorm2d, NaiveSyncBatchNorm
+
+
+
+IMAGE_EXTENSIONS = (
+    '.jpg',
+    '.jpeg',
+    '.tif',
+    '.tiff',
+    '.png'
+)
+
+
+def listImages(baseDir, recursive=True):
+    imgs = set(glob.glob(os.path.join(baseDir, '**/*'+IMAGE_EXTENSIONS[0]), recursive=recursive))
+    for ie in IMAGE_EXTENSIONS[1:]:
+        imgs = imgs.union(set(glob.glob(os.path.join(baseDir, '**/*'+ie), recursive=recursive)))
+    return imgs
+
+
+
+def loadImage(filePath, normalisation_value=1, makeUint8=False):
+    with rasterio.open(filePath) as f:
+        image = f.read().astype(np.float32)
+        coords = next(rasterio.features.shapes(f.dataset_mask(), transform=f.transform))[0]['coordinates'][0]
+    image = image / normalisation_value
+    if makeUint8:
+        image = (image * 255).astype(np.uint8)
+    return image, coords
+
+
+
+def saveImage(image, filePath, out_meta={}):
+    if 'width' not in out_meta:
+        out_meta['width'] = image.shape[2]
+    if 'height' not in out_meta:
+        out_meta['height'] = image.shape[1]
+    if 'count' not in out_meta:
+        out_meta['count'] = image.shape[0]
+    if 'dtype' not in out_meta:
+        out_meta['dtype'] = str(image.dtype)
+    with rasterio.open(filePath, 'w', **out_meta) as dest_img:
+        dest_img.write(image)
 
 
 
@@ -104,28 +147,3 @@ def loadModel(cfg, resume=True):
 
     # model.load_state_dict(torch.load("./model_final.pth", map_location='cpu'))
     return model, checkpointer, startIter
-
-
-
-def loadImage(filePath, normalisation_value=1, makeUint8=False):
-    with rasterio.open(filePath) as f:
-        image = f.read().astype(np.float32)
-        coords = next(rasterio.features.shapes(f.dataset_mask(), transform=f.transform))[0]['coordinates'][0]
-    image = image / normalisation_value
-    if makeUint8:
-        image = (image * 255).astype(np.uint8)
-    return image, coords
-
-
-
-def saveImage(image, filePath, out_meta={}):
-    if 'width' not in out_meta:
-        out_meta['width'] = image.shape[2]
-    if 'height' not in out_meta:
-        out_meta['height'] = image.shape[1]
-    if 'count' not in out_meta:
-        out_meta['count'] = image.shape[0]
-    if 'dtype' not in out_meta:
-        out_meta['dtype'] = str(image.dtype)
-    with rasterio.open(filePath, 'w', **out_meta) as dest_img:
-        dest_img.write(image)

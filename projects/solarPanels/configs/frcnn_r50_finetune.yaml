@@ -1,0 +1,17 @@
+_BASE_: base_solarPanels_finetune.yaml
+SOLVER:
+  BASE_LR: 0.0001
+  IMS_PER_BATCH: 2
+  STEPS:
+  - 5000
+  - 15000
+  - 30000
+OUTPUT_DIR: "cnn_states/solarPanels/finetuned/frcnn_r50"
+MODEL:
+  WEIGHTS: "cnn_states/solarPanels/pretrain/frcnn_r50/model_final.pth"
+  MASK_ON: False
+  RESNETS:
+    DEPTH: 50
+  ROI_HEADS:
+    NUM_CLASSES: 1
+  REPLACE_BATCH_NORM: False
