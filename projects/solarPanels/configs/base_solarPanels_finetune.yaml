@@ -14,7 +14,7 @@ SOLVER:
   - 30000
 OUTPUT_DIR: "cnn_states/solarPanels/finetuned"
 MODEL:
-  WEIGHTS: "cnn_states/solarPanels/pretrain"
+  WEIGHTS: "cnn_states/solarPanels/pretrain/frcnn_r50"
   MASK_ON: True
   RESNETS:
     DEPTH: 50
