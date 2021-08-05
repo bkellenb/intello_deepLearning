@@ -133,8 +133,9 @@ def split_coco_dataset_patches(imageFolder, annotationFile, destinationFolder, p
     
     # image and annotation indices
     imgs_existing = util.listImages(destinationFolder, True)
-    iidx = len(imgs_existing)       # offset image index to prevent referencing across sets
-    aidx = 1                        # new index for annotations
+    iidx_offset = len(imgs_existing)       # offset image file name index to prevent referencing across sets
+    iidx = 0                        # new index for image IDs (need to start at zero for COCOEvaluator)
+    aidx = 0                        # new index for annotations
 
     # iterate over images & crop
     for ii in tqdm(meta['images']):
@@ -161,7 +162,7 @@ def split_coco_dataset_patches(imageFolder, annotationFile, destinationFolder, p
             # crop and save image
             img_crop = img[:, extent[1]:extent[3], extent[0]:extent[2]]
             _, ext = os.path.splitext(ii['file_name'])
-            fileName_out = os.path.join(destinationFolder, f'{iidx}{ext}')
+            fileName_out = os.path.join(destinationFolder, f'{iidx_offset}{ext}')
             util.saveImage(img_crop, fileName_out, {'driver': 'GTiff', 'dtype': str(img_crop.dtype)})
             # cv2.imwrite(fileName_out, img_crop)
             meta_out['images'].append({
@@ -180,6 +181,7 @@ def split_coco_dataset_patches(imageFolder, annotationFile, destinationFolder, p
                     meta_out['annotations'].append(anno_crop)
                     aidx += 1
             iidx += 1
+            iidx_offset += 1
         
         # crop around annotations
         if numPatchesPerAnnotation:
@@ -216,9 +218,8 @@ def split_coco_dataset_patches(imageFolder, annotationFile, destinationFolder, p
                     # crop and save image
                     img_crop = img[:, extent[1]:extent[3], extent[0]:extent[2]]
                     _, ext = os.path.splitext(ii['file_name'])
-                    fileName_out = os.path.join(destinationFolder, f'{iidx}{ext}')
+                    fileName_out = os.path.join(destinationFolder, f'{iidx_offset}{ext}')
                     util.saveImage(img_crop, fileName_out)
-                    # cv2.imwrite(fileName_out, img_crop)
                     meta_out['images'].append({
                         'id': iidx,
                         'file_name': fileName_out,
@@ -235,6 +236,7 @@ def split_coco_dataset_patches(imageFolder, annotationFile, destinationFolder, p
                             meta_out['annotations'].append(anno_crop)
                             aidx += 1
                     iidx += 1
+                    iidx_offset += 1
         
     # save metadata file
     json.dump(meta_out, open(destFile_meta, 'w'))

@@ -52,6 +52,15 @@ These inputs are then used to create a dataset of images (default size 800x600) 
 
 Next, we merge all categories into one ("solar panel"):
 ```bash
+  python projects/solarPanels/dataset/coco_merge_categories.py --annotation_file path/to/patches/train.json \
+                                                            --destination_file path/to/patches/train.json;
+
+  python projects/solarPanels/dataset/coco_merge_categories.py --annotation_file path/to/patches/val.json \
+                                                            --destination_file path/to/patches/val.json;
+
+  python projects/solarPanels/dataset/coco_merge_categories.py --annotation_file path/to/patches/test.json \
+                                                            --destination_file path/to/patches/test.json;
+
   # RGB only
   python projects/solarPanels/dataset/coco_merge_categories.py --annotation_file path/to/patches_rgb/train.json \
                                                             --destination_file path/to/patches_rgb/train.json;
