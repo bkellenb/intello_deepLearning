@@ -143,4 +143,31 @@ For example, to train a Mask R-CNN with ResNet-50, use the following code snippe
 
 ### 3. Evaluate model performance
 
-Coming soon.
+Performance of the model on the held-out validation or test set can be evaluated
+as follows:
+
+```bash
+  python engine/test.py --config projects/solarPanels/configs/maskrcnn_r50.yaml \
+                        --split val \     # or "test"
+                        --vis 0 \         # set to 1 to display predictions for each image
+                        --evaluate 1
+```
+
+This will use the [COCO evaluation metrics](https://detectron2.readthedocs.io/en/latest/modules/evaluation.html#detectron2.evaluation.COCOEvaluator).
+
+
+### 4. Perform inference
+
+The code below employs a trained model and predicts polygons on a folder of
+images. Images are split into patches on a regular grid according to the
+`INPUT.IMAGE_SIZE` specified in the config file and processed separately.
+Resulting masks are converted to polygons, transformed to match the original
+image's geospatial extents and (optionally) visualised and/or exported to an
+ESRI Shapefile.
+
+```bash
+  python engine/inference.py --config projects/solarPanels/configs/maskrcnn_r50.yaml \
+                              --vis 1 \               # optional: set to 1 to visualise
+                              --output predictions \  # optional: provide path for output Shapefile
+                              --single_file 1         # set to 1 to create one SHP for all images (default)
+```
