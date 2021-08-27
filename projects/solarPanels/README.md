@@ -171,3 +171,6 @@ ESRI Shapefile.
                               --output predictions \  # optional: provide path for output Shapefile
                               --single_file 1         # set to 1 to create one SHP for all images (default)
 ```
+
+Note that polygons are currently treated separately; i.e., polygons that touch each other
+(e.g. for predictions that could span across inference patches) are not unified.
