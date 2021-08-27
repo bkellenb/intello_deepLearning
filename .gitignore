@@ -5,3 +5,5 @@ __pycache__
 
 /datasets/
 cnn_states
+predictions
+*.txt

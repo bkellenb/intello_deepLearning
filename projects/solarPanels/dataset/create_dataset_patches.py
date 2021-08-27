@@ -142,7 +142,7 @@ def split_coco_dataset_patches(imageFolder, annotationFile, destinationFolder, p
         
         # load image
         # img = cv2.imread(os.path.join(imageFolder, ii['file_name']), cv2.IMREAD_UNCHANGED)
-        img, _ = util.loadImage(os.path.join(imageFolder, ii['file_name']), 1, False)
+        img, _, _ = util.loadImage(os.path.join(imageFolder, ii['file_name']), 1, False)
 
         annotations = annos.get(ii['id'], [])
 

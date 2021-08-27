@@ -17,20 +17,11 @@ import torch
 from detectron2 import config
 from detectron2.data.catalog import DatasetCatalog, MetadataCatalog
 from detectron2.data.datasets import register_coco_instances
-from detectron2.evaluation import COCOEvaluator, CityscapesInstanceEvaluator
+from detectron2.evaluation import COCOEvaluator
 from detectron2.utils.visualizer import Visualizer, ColorMode
 
 from engine import util
 from engine.dataMapper import MultibandMapper
-
-
-IMAGE_EXTENSIONS = (
-    '.tif',
-    '.tiff',
-    '.jpg',
-    '.jpeg',
-    '.png'
-)
 
 
 
@@ -45,26 +36,12 @@ def load_config_dataset(cfg, split='train'):
     setattr(cfg.DATASETS, split.upper(), dsName)
 
     dataset = DatasetCatalog.get(dsName)
-    return dataset
+    return dataset, dsName
 
 
 
-def load_image_folder(directory):
-    images = set()
-    for ie in IMAGE_EXTENSIONS:
-        images = images.union(set(glob.glob(os.path.join(directory, '**/*'+ie), recursive=True)))
-        images = images.union(set(glob.glob(os.path.join(directory, '**/*'+ie.upper()))))
-    
-    # bring into minimal Detectron2-compliant form
-    images = [{'image_id': idx, 'file_name': i, 'annotations': []} for idx, i in enumerate(images)]
-    return images
-
-
-
-def predict(cfg, dataLoader, model, evaluate=False, visualise=False):
+def predict(cfg, dataLoader, dsName, model, evaluate=False, visualise=False):
     model.eval()
-
-    dsName = cfg.DATASETS.NAME+'_train'       # for categories
 
     if evaluate:
         evaluator = COCOEvaluator(dsName, use_fast_impl=False)
@@ -106,6 +83,7 @@ def predict(cfg, dataLoader, model, evaluate=False, visualise=False):
             plt.suptitle(title)
             plt.waitforbuttonpress()
 
+    tBar.close()
     if evaluate:
         accuracyMetrics = evaluator.evaluate()
 
@@ -123,6 +101,8 @@ if __name__ == '__main__':
                         help='Whether to visualise predictions or not.')
     parser.add_argument('--evaluate', type=int, default=1,
                         help='Whether to perform accuracy evaluation or not. Ignored if "image_folder" is specified.')
+    parser.add_argument('--start_iter', type=int, default=-1,
+                        help='Starting iteration for model to load (default: -1 for latest)')
     args = parser.parse_args()
 
     print('Initiating inference...')
@@ -138,16 +118,17 @@ if __name__ == '__main__':
     print(f'\timage size:\t\t{cfg.INPUT.IMAGE_SIZE}')
     print(f'\tvisualise:\t\t{bool(args.vis)}')
 
+    dsName = None
     if args.image_folder is not None:
         load_config_dataset(cfg, split='train')     # register dataset for metadata
-        dataset = load_image_folder(args.image_folder)
+        dataset = util.load_image_folder(args.image_folder)
         evaluate = False        # cannot evaluate without ground truth
         print(f'\tImage folder:\t\t\t"{args.image_folder}"')
     else:
         cfg.SOLVER.IMS_PER_BATCH = 1
-        if args.split != 'train':
-            load_config_dataset(cfg, split='train')     # register dataset for metadata
-        dataset = load_config_dataset(cfg, args.split)
+        # if args.split != 'train':
+        #     load_config_dataset(cfg, split='train')     # register dataset for metadata
+        dataset, dsName = load_config_dataset(cfg, args.split)
         print(f'\tdataset:\t\t"{cfg.DATASETS.NAME}", split: {args.split}, no. images: {len(dataset)}')
         print(f'\tevaluate:\t\t{bool(args.evaluate)}')
 
@@ -155,10 +136,10 @@ if __name__ == '__main__':
     dataLoader = build_detection_test_loader(dataset, mapper=mapper)
     
     # load model
-    model, _, start_iter = util.loadModel(cfg, resume=True)
+    model, _, start_iter = util.loadModel(cfg, resume=True, startIter=args.start_iter)
     print(f'\tmodel iter:\t\t{start_iter}')
 
     print('\n')
 
     # do the work
-    predict(cfg, dataLoader, model, evaluate, args.vis)
+    predict(cfg, dataLoader, dsName, model, evaluate, args.vis)

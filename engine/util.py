@@ -46,7 +46,19 @@ def loadImage(filePath, normalisation_value=1, makeUint8=False):
     image = image / normalisation_value
     if makeUint8:
         image = (image * 255).astype(np.uint8)
-    return image, coords
+    return image, coords, f.transform
+
+
+
+def load_image_folder(directory):
+    images = set()
+    for ie in IMAGE_EXTENSIONS:
+        images = images.union(set(glob.glob(os.path.join(directory, '**/*'+ie), recursive=True)))
+        images = images.union(set(glob.glob(os.path.join(directory, '**/*'+ie.upper()))))
+    
+    # bring into minimal Detectron2-compliant form
+    images = [{'image_id': idx, 'file_name': i, 'annotations': []} for idx, i in enumerate(images)]
+    return images
 
 
 
@@ -90,7 +102,7 @@ def _replaceBatchNorm(module):
 
 
 
-def loadModel(cfg, resume=True):
+def loadModel(cfg, resume=True, startIter=None):
     '''
         Performs the following steps:
         1. Build a base Detectron2 model, load pre-trained weights
@@ -135,7 +147,27 @@ def loadModel(cfg, resume=True):
     # load existing model weights
     checkpointer = DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR)
     if resume and checkpointer.has_checkpoint():
-        startIter = checkpointer.resume_or_load(checkpointer.get_checkpoint_file()).get('iteration', -1) + 1
+        states = checkpointer.get_all_checkpoint_files()
+        if startIter is not None and startIter >= 0 and len(states):
+            # find closest starting point
+            parent, _ = os.path.split(states[0])
+            baseName = os.path.join(parent, 'model_')
+            closestState = None
+            diff = 1e9
+            for s in states:
+                try:
+                    epoch = int(s.replace(baseName, '').replace('.pth', ''))
+                    newDiff = abs(epoch - startIter)
+                    if newDiff < diff:
+                        diff = newDiff
+                        closestState = s
+                except:
+                    pass
+            startIter = checkpointer.load(closestState).get('iteration', -1) + 1
+            if diff > 1:
+                print(f'Closest checkpoint to requested model iteration {startIter}: "{closestState}"')
+        else:
+            startIter = checkpointer.resume_or_load(checkpointer.get_checkpoint_file()).get('iteration', -1) + 1
     else:
         startIter = 0
 

@@ -18,19 +18,24 @@ class MultibandMapper:
     
     def __init__(self, normalisation_value, image_size, augmentations=None):
         self.normalisation_value = normalisation_value
-        self.image_size = image_size
-        if not isinstance(self.image_size, Iterable):
-            self.image_size = (self.image_size, self.image_size)
-        else:
-            # height, width
-            self.image_size = (self.image_size[1], self.image_size[0])
         
         self.transform = []
         if isinstance(augmentations, T.AugmentationList):
             self.transform.extend(augmentations.augs)
         elif isinstance(augmentations, Iterable):
             self.transform.extend(augmentations)
-        self.transform.append(T.Resize(self.image_size))
+
+        self.image_size = image_size
+        if self.image_size is None or self.image_size < 0:
+            # do not resize
+            pass
+        else:
+            if not isinstance(self.image_size, Iterable):
+                self.image_size = (self.image_size, self.image_size)
+            else:
+                # height, width
+                self.image_size = (self.image_size[1], self.image_size[0])
+            self.transform.append(T.Resize(self.image_size))
         self.transform = T.AugmentationList(self.transform)
         
 

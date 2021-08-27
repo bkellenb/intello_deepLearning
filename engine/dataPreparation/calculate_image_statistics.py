@@ -15,7 +15,7 @@ from engine.util import IMAGE_EXTENSIONS, loadImage
 
 
 def _get_image_stats(imgPath):
-    img, _ = loadImage(imgPath, normalisation_value=1, makeUint8=False)
+    img, _, _ = loadImage(imgPath, normalisation_value=1, makeUint8=False)
     img = np.reshape(img, (img.shape[0], -1))
     means = np.mean(img, 1)
     stds = np.std(img, 1)
