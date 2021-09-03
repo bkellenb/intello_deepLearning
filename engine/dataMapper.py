@@ -26,7 +26,7 @@ class MultibandMapper:
             self.transform.extend(augmentations)
 
         self.image_size = image_size
-        if self.image_size is None or self.image_size < 0:
+        if self.image_size is None or (not isinstance(self.image_size, Iterable) and self.image_size < 0):
             # do not resize
             pass
         else:

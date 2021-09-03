@@ -19,7 +19,9 @@ def _get_image_stats(imgPath):
     img = np.reshape(img, (img.shape[0], -1))
     means = np.mean(img, 1)
     stds = np.std(img, 1)
-    return means, stds
+    mins = np.min(img, 1)
+    maxs = np.max(img, 1)
+    return means, stds, mins, maxs
 
 
 def calc_image_stats(imageFolder, destFile, forceRecreate=False):
@@ -45,12 +47,14 @@ def calc_image_stats(imageFolder, destFile, forceRecreate=False):
         sys.exit(0)
 
     # prepare value vectors
-    means, stds = _get_image_stats(imgs[0])
+    means, stds, mins, maxs = _get_image_stats(imgs[0])
     
     for img in tqdm(imgs[1:]):
-        m, s = _get_image_stats(img)
+        m, s, mi, ma = _get_image_stats(img)
         means += m
         stds += s
+        mins = np.min((mins, mi), 0)
+        maxs = np.max((maxs, ma), 0)
     
     means /= len(imgs)
     stds /= len(imgs)
@@ -61,14 +65,18 @@ def calc_image_stats(imageFolder, destFile, forceRecreate=False):
         f.write(', '.join([str(m) for m in means]) + '\n')
         f.write('stds:\n')
         f.write(', '.join([str(s) for s in stds]) + '\n')
+        f.write('mins:\n')
+        f.write(', '.join([str(m) for m in mins]) + '\n')
+        f.write('maxs:\n')
+        f.write(', '.join([str(m) for m in maxs]) + '\n')
 
 
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Calculate and export image statistics to text file.')
-    parser.add_argument('--image_folder', type=str, default='/data/datasets/INTELLO/solarPanels_aux/patch_datasets/224x224',
+    parser.add_argument('--image_folder', type=str, default='/data/datasets/INTELLO/solarPanels/patches_224x224_5_2',
                         help='Base folder for the images to calculate statistics on')
-    parser.add_argument('--dest_file', type=str, default='/data/datasets/INTELLO/solarPanels_aux/patch_datasets/224x224/img_stats.txt',
+    parser.add_argument('--dest_file', type=str, default='/data/datasets/INTELLO/solarPanels/patches_224x224_5_2/img_stats.txt',
                         help='Destination path for the statistics text file')
     parser.add_argument('--force_recreate', type=int, default=1,
                         help='Whether to force re-creation of splits even if files already exist (default: 0)')
