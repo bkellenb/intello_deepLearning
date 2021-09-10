@@ -130,6 +130,15 @@ dataset by also cropping five patches at random in each image:
                                                             --jitter 25 25;
 ```
 
+To replicate results with slope and aspect, we can add those into a separate directory:
+```bash
+  python projects/solarPanels/dataset/calculate_slope_aspect.py --image_folder path/to/patches \
+                                                                --dem_ordinal 4 \
+                                                                --dest_folder /path/to/patches_slope_aspect;
+  
+  cp /path/to/patches/*.json /path/to/patches_slope_aspect/.;
+```
+
 
 ### 2. Train models
 

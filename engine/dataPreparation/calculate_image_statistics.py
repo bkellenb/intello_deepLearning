@@ -74,9 +74,9 @@ def calc_image_stats(imageFolder, destFile, forceRecreate=False):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Calculate and export image statistics to text file.')
-    parser.add_argument('--image_folder', type=str, default='/data/datasets/INTELLO/solarPanels/patches_224x224_5_2',
+    parser.add_argument('--image_folder', type=str, default='/data/datasets/INTELLO/solarPanels/patches_224x224_5_2_slope_aspect',
                         help='Base folder for the images to calculate statistics on')
-    parser.add_argument('--dest_file', type=str, default='/data/datasets/INTELLO/solarPanels/patches_224x224_5_2/img_stats.txt',
+    parser.add_argument('--dest_file', type=str, default='/data/datasets/INTELLO/solarPanels/patches_224x224_5_2_slope_aspect/img_stats.txt',
                         help='Destination path for the statistics text file')
     parser.add_argument('--force_recreate', type=int, default=1,
                         help='Whether to force re-creation of splits even if files already exist (default: 0)')

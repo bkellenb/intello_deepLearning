@@ -1,0 +1,62 @@
+VERSION: 2
+DATALOADER:
+  ASPECT_RATIO_GROUPING: false
+  FILTER_EMPTY_ANNOTATIONS: false
+DATASETS:
+  NAME: "solar_panels"
+  DATA_ROOT: "/data/datasets/INTELLO/solarPanels/patches_224x224_5_2_slope_aspect"
+SOLVER:
+  BASE_LR: 0.001
+  IMS_PER_BATCH: 2
+  STEPS:
+  - 5000
+  - 15000
+  - 30000
+OUTPUT_DIR: "cnn_states/solarPanels"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  MASK_ON: True
+  RESNETS:
+    DEPTH: 50
+  ROI_HEADS:
+    NUM_CLASSES: 1
+  REPLACE_BATCH_NORM: false
+  PIXEL_MEAN:
+    - 97.32908
+    - 103.76076
+    - 102.778725
+    - 2.510275
+    - 110.10215
+    - 0.28688994
+    - 240.44885
+  PIXEL_STD:
+    - 35.45578
+    - 32.37561
+    - 31.029196
+    - 5.7908273
+    - 4.883663
+    - 0.82736456
+    - 69.732
+INPUT:
+  NUM_INPUT_CHANNELS: 5
+  NORMALISATION: 1
+  IMAGE_SIZE: [224, 224]
+AUGMENTATION:
+  - NAME: "RandomBrightness"
+    KWARGS:
+      intensity_min: 0.8
+      intensity_max: 1.2
+  - NAME: "RandomContrast"
+    KWARGS:
+      intensity_min: 0.8
+      intensity_max: 1.2
+  - NAME: "RandomFlip"
+    KWARGS:
+      prob: 0.5
+      horizontal: 0
+      vertical: 1
+  - NAME: "RandomFlip"
+    KWARGS:
+      prob: 0.5
+      horizontal: 1
+      vertical: 0
