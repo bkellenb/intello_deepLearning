@@ -8,6 +8,7 @@ import argparse
 import glob
 import numpy as np
 from tqdm import tqdm
+import json
 
 import rasterio
 import richdem as rd
@@ -23,6 +24,8 @@ def calc_slope_aspect(imageFolder, demLayerOrdinal, destFolder=None):
     '''
     if not imageFolder.endswith(os.sep):
         imageFolder += os.sep
+    if destFolder is not None and not destFolder.endswith(os.sep):
+        destFolder += os.sep
 
     # get all images
     imgs = glob.glob(os.path.join(imageFolder, '**/*.tif'), recursive=True)
@@ -52,7 +55,19 @@ def calc_slope_aspect(imageFolder, demLayerOrdinal, destFolder=None):
         with rasterio.open(destPath, 'w', **meta) as f:
             f.write(img)
 
-
+    if destFolder is not None:
+        # also copy and modify annotation JSON files
+        metaFiles = glob.glob(os.path.join(imageFolder, '**/*.json'), recursive=True)
+        for mf in metaFiles:
+            meta = json.load(open(mf, 'r'))
+            if 'images' in meta:
+                for idx in range(len(meta['images'])):
+                    fileName = meta['images'][idx]['file_name']
+                    meta['images'][idx]['file_name'] = fileName.replace(imageFolder, destFolder)
+                destPath = mf.replace(imageFolder, destFolder)
+                parent, _ = os.path.split(destPath)
+                os.makedirs(parent, exist_ok=True)
+                json.dump(meta, open(destPath, 'w'))
 
 
 if __name__ == '__main__':

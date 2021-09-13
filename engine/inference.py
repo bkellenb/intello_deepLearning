@@ -176,9 +176,9 @@ def predict(cfg, images, model, visualise=False, outputDir=None, outputSingleFil
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Predict on large images, optionally visualise and/or save in geospatial format.')
-    parser.add_argument('--config', type=str, default='projects/solarPanels/configs/maskrcnn_r50.yaml',
+    parser.add_argument('--config', type=str, default='projects/solarPanels/configs/maskrcnn_r50_slopeAspect.yaml',
                         help='Path to the config.yaml file to use on this machine.')
-    parser.add_argument('--image_folder', type=str, default='/data/datasets/INTELLO/solarPanels/images',
+    parser.add_argument('--image_folder', type=str, default='/data/datasets/INTELLO/solarPanels/images_slope_aspect',
                         help='Directory of images to predict on.')
     parser.add_argument('--vis', type=int, default=1,
                         help='Whether to visualise predictions or not.')

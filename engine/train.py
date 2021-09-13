@@ -144,7 +144,7 @@ def do_test(cfg, model):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train Detectron2 models.')
-    parser.add_argument('--config', type=str, default='projects/solarPanels/configs/frcnn_r50_pretrain.yaml',
+    parser.add_argument('--config', type=str, default='projects/solarPanels/configs/maskrcnn_r50_slopeAspect.yaml',
                         help='Path to the config.yaml file to use on this machine.')
     parser.add_argument('--resume', type=int, default=1,
                         help='Whether to resume model training or start from pre-trained base.')

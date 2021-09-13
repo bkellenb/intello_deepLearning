@@ -135,9 +135,8 @@ To replicate results with slope and aspect, we can add those into a separate dir
   python projects/solarPanels/dataset/calculate_slope_aspect.py --image_folder path/to/patches \
                                                                 --dem_ordinal 4 \
                                                                 --dest_folder /path/to/patches_slope_aspect;
-  
-  cp /path/to/patches/*.json /path/to/patches_slope_aspect/.;
 ```
+If a separate directory is specified (parameter `--dest_folder`), any annotation metadata files (*.json) will be copied and modified as well.
 
 
 ### 2. Train models

@@ -3,7 +3,7 @@ DATALOADER:
   ASPECT_RATIO_GROUPING: false
   FILTER_EMPTY_ANNOTATIONS: false
 DATASETS:
-  NAME: "solar_panels"
+  NAME: "solar_panels_slope_aspect"
   DATA_ROOT: "/data/datasets/INTELLO/solarPanels/patches_224x224_5_2_slope_aspect"
 SOLVER:
   BASE_LR: 0.001
@@ -38,7 +38,7 @@ MODEL:
     - 0.82736456
     - 69.732
 INPUT:
-  NUM_INPUT_CHANNELS: 5
+  NUM_INPUT_CHANNELS: 7
   NORMALISATION: 1
   IMAGE_SIZE: [224, 224]
 AUGMENTATION:
