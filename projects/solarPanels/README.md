@@ -21,7 +21,8 @@ Statistical figures below are calculated on held-out validation set using Detect
 
 **Mask R-CNN (RGB+DHM+DSM)**
 
-__(Iteration 500'000)__
+_(Iteration 500'000)_
+
 `python engine/test.py --config projects/solarPanels/configs/maskrcnn_r50.yaml --vis 0`
 
 BBOX
@@ -59,7 +60,7 @@ SEGM
 
 **Mask R-CNN (RGB+DHM+DSM+slope+aspect)**
 
-__(coming soon)__
+_(coming soon)_
 
 
 
@@ -79,10 +80,10 @@ These inputs are then used to create a dataset of images (default size 800x600) 
 
 ```bash
     # parameters
-    fishnetPath=path/to/fishnet.shp
-    solarPanelsPath=path/to/solarPanels.shp
-    destFolder_800x600=images
-    destFolder_224x224=patches
+    fishnetPath=path/to/fishnet.shp               # location of the Shapefile containing fishnet polygons that were annotated by the INTELLO team
+    solarPanelsPath=path/to/solarPanels.shp       # location of the Shapefile containing the actual solar panel polygon annotations
+    destFolder_800x600=images                     # destination directory for the images cropped with the fishnet polygon extents
+    destFolder_224x224=patches                    # destination directory for the smaller patches cropped from the images for model training
 
 
     python projects/solarPanels/dataset/create_dataset_fishnet.py --image_sources projects/solarPanels/dataset/image_sources.json \
@@ -98,16 +99,19 @@ These inputs are then used to create a dataset of images (default size 800x600) 
                                                             --image_format image/tiff;
 ```
 
-Next, we merge all categories into one ("solar panel"):
+Next, we merge all categories ("warm water", "electricity", "unknown") into one ("solar panel"):
 ```bash
   python projects/solarPanels/dataset/coco_merge_categories.py --annotation_file $destFolder_800x600/train.json \
-                                                            --destination_file $destFolder_800x600/train.json;
+                                                            --destination_file $destFolder_800x600/train.json \
+                                                            --mapping_file projects/solarPanels/dataset/category_map.json;
 
   python projects/solarPanels/dataset/coco_merge_categories.py --annotation_file $destFolder_800x600/val.json \
-                                                            --destination_file $destFolder_800x600/val.json;
+                                                            --destination_file $destFolder_800x600/val.json \
+                                                            --mapping_file projects/solarPanels/dataset/category_map.json;
 
   python projects/solarPanels/dataset/coco_merge_categories.py --annotation_file $destFolder_800x600/test.json \
-                                                            --destination_file $destFolder_800x600/test.json;
+                                                            --destination_file $destFolder_800x600/test.json \
+                                                            --mapping_file projects/solarPanels/dataset/category_map.json;
 ```
 
 
@@ -146,7 +150,7 @@ dataset by also cropping five patches at random in each image:
 To replicate results with slope and aspect, we can add those into a separate directory:
 ```bash
   python projects/solarPanels/dataset/calculate_slope_aspect.py --image_folder $destFolder_224x224 \
-                                                                --dem_ordinal 4 \
+                                                                --dem_ordinal 4 \       # band index of the images where the DEM is to be found (starts at zero)
                                                                 --dest_folder ${destFolder_224x224}_slope_aspect;
 ```
 If a separate directory is specified (parameter `--dest_folder`), any annotation metadata files (*.json) will be copied and modified as well.
