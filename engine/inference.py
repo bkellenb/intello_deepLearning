@@ -11,7 +11,6 @@ from collections.abc import Iterable
 import json
 import numpy as np
 from tqdm import tqdm
-import cv2
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
 
@@ -143,14 +142,14 @@ def predict(cfg, images, model, visualise=False, outputDir=None, outputSingleFil
                                     print('debug')
 
         if visualise:
-            img_vis, _, _ = util.loadImage(ii['file_name'], 1, True)
-            img_vis = img_vis[:3,...].transpose(1,2,0)[:,:,::-1]            #TODO: BGR to RGB conversion does not work
+            img_vis, _, _ = util.loadImage(ii['file_name'], 1, False)
+            img_vis = img_vis[:3,...].transpose(1,2,0).astype(np.uint8)
             plt.figure(1)
             plt.clf()
             plt.imshow(img_vis)
             ax = plt.gca()
             for i in instances:
-                poly = Polygon(i)
+                poly = Polygon(i, fc=(0,0,1,0.5), ec=(0,0,1,1), lw=0.1)
                 ax.add_patch(poly)
             plt.title(ii['file_name'])
             plt.waitforbuttonpress()

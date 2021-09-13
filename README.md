@@ -9,3 +9,8 @@ Project contents coming soon.
 ## Installation
 
 See [here](doc/INSTALL.md).
+
+
+## Projects
+
+[Solar panel detection](projects/solarPanels)

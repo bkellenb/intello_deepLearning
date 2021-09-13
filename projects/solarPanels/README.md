@@ -1,10 +1,65 @@
 # Solar panel delineation
 
 This project employs deep learning models to delineate solar panels in aerial imagery.
-Candidate tasks and models:
-* __(current favourite)__ Instance segmentation: Mask R-CNN
-* Semantic segmentation: DeepLabV3+
+Currently supported tasks and models:
+* Instance segmentation: Mask R-CNN
 * Detection: Faster R-CNN
+
+
+## Data sources
+
+Experiments have been conducted using the following types of remote sensing imagery:
+  * RGB orthoimages from 2020: `https://geoservices.wallonie.be/arcgis/services/IMAGERIE/ORTHO_2020/MapServer/WMSServer`
+  * Digital Height Model (DHM; `MNH_ORTHOS_2019.tif`)
+  * Digital Surface Model (DSM; `MNS2019.tif`)
+  * Slope and aspect (calculated separately from DHM)
+
+
+## Current results
+
+Statistical figures below are calculated on held-out validation set using Detectron2's COCOEvaluator.
+
+**Mask R-CNN (RGB+DHM+DSM)**
+
+__(Iteration 500'000)__
+`python engine/test.py --config projects/solarPanels/configs/maskrcnn_r50.yaml --vis 0`
+
+BBOX
+```
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.065
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.157
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.041
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.049
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.145
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.038
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.054
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.109
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.109
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.074
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.254
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.250
+```
+
+SEGM
+```
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.046
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.135
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.019
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.025
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.184
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.000
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.043
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.082
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.082
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.048
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.251
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.000
+```
+
+
+**Mask R-CNN (RGB+DHM+DSM+slope+aspect)**
+
+__(coming soon)__
 
 
 
@@ -18,30 +73,23 @@ To replicate the results obtained in here, please follow the steps as described 
 This part depends on three main inputs:
   * A fishnet shapefile defining the extents that were annotated for solar panels
   * A polygon shapefile containing solar panel polygons themselves
-  * A path or an URL pointing to a GeoTIFF image, a folder of GeoTIFF images, a
-    VRT file, or else a Web Map Service (WMS) under which raster data can be retrieved. By default we use the Wallonian orthoimages from 2020 as a source: `https://geoservices.wallonie.be/arcgis/services/IMAGERIE/ORTHO_2020/MapServer/WMSServer`.
+  * A JSON file containing the definition of input layers in order. See file [dataset/image_sources.json](dataset/image_sources.json) as an example for RGB+DHM+DSM.
 
 These inputs are then used to create a dataset of images (default size 800x600) along with annotations in [MS-COCO format](https://cocodataset.org) containing category labels, bounding boxes, and polygons (in image coordinates):
 
 ```bash
-    python projects/solarPanels/dataset/create_dataset_fishnet.py --image_sources projects/solarPanels/dataset/image_sources.json \
-                                                            --fishnet_file path/to/fishnet.shp \
-                                                            --anno_file path/to/solarPanels.shp \
-                                                            --anno_field Type \
-                                                            --dest_folder path/to/images \
-                                                            --train_frac 0.6 \
-                                                            --val_frac 0.1 \
-                                                            --srs EPSG:31370 \
-                                                            --layers ORTHO_2020 \
-                                                            --image_size 800 600 \
-                                                            --image_format image/tiff;
+    # parameters
+    fishnetPath=path/to/fishnet.shp
+    solarPanelsPath=path/to/solarPanels.shp
+    destFolder_800x600=images
+    destFolder_224x224=patches
 
-    # RGB only
-    python projects/solarPanels/dataset/create_dataset_fishnet.py --image_sources projects/solarPanels/dataset/image_sources_rgb.json \
-                                                            --fishnet_file path/to/fishnet.shp \
-                                                            --anno_file path/to/solarPanels.shp \
+
+    python projects/solarPanels/dataset/create_dataset_fishnet.py --image_sources projects/solarPanels/dataset/image_sources.json \
+                                                            --fishnet_file $fishnetPath \
+                                                            --anno_file $solarPanelsPath \
                                                             --anno_field Type \
-                                                            --dest_folder path/to/images_rgb \
+                                                            --dest_folder $destFolder_800x600 \
                                                             --train_frac 0.6 \
                                                             --val_frac 0.1 \
                                                             --srs EPSG:31370 \
@@ -52,24 +100,14 @@ These inputs are then used to create a dataset of images (default size 800x600) 
 
 Next, we merge all categories into one ("solar panel"):
 ```bash
-  python projects/solarPanels/dataset/coco_merge_categories.py --annotation_file path/to/patches/train.json \
-                                                            --destination_file path/to/patches/train.json;
+  python projects/solarPanels/dataset/coco_merge_categories.py --annotation_file $destFolder_800x600/train.json \
+                                                            --destination_file $destFolder_800x600/train.json;
 
-  python projects/solarPanels/dataset/coco_merge_categories.py --annotation_file path/to/patches/val.json \
-                                                            --destination_file path/to/patches/val.json;
+  python projects/solarPanels/dataset/coco_merge_categories.py --annotation_file $destFolder_800x600/val.json \
+                                                            --destination_file $destFolder_800x600/val.json;
 
-  python projects/solarPanels/dataset/coco_merge_categories.py --annotation_file path/to/patches/test.json \
-                                                            --destination_file path/to/patches/test.json;
-
-  # RGB only
-  python projects/solarPanels/dataset/coco_merge_categories.py --annotation_file path/to/patches_rgb/train.json \
-                                                            --destination_file path/to/patches_rgb/train.json;
-
-  python projects/solarPanels/dataset/coco_merge_categories.py --annotation_file path/to/patches_rgb/val.json \
-                                                            --destination_file path/to/patches_rgb/val.json;
-
-  python projects/solarPanels/dataset/coco_merge_categories.py --annotation_file path/to/patches_rgb/test.json \
-                                                            --destination_file path/to/patches_rgb/test.json;
+  python projects/solarPanels/dataset/coco_merge_categories.py --annotation_file $destFolder_800x600/test.json \
+                                                            --destination_file $destFolder_800x600/test.json;
 ```
 
 
@@ -80,50 +118,25 @@ dataset by also cropping five patches at random in each image:
 
 ```bash
 
-  python projects/solarPanels/dataset/create_dataset_patches.py --image_folder path/to/images \
-                                                            --annotation_file path/to/images/train.json \
-                                                            --dest_folder path/to/patches \
+  python projects/solarPanels/dataset/create_dataset_patches.py --image_folder $destFolder_800x600 \
+                                                            --annotation_file $destFolder_800x600/train.json \
+                                                            --dest_folder $destFolder_224x224 \
                                                             --patch_size 224 224 \
                                                             --num_patches_random 5 \
                                                             --num_patches_per_annotation 5 \
                                                             --jitter 25 25;
 
-  python projects/solarPanels/dataset/create_dataset_patches.py --image_folder path/to/images \
-                                                            --annotation_file path/to/images/val.json \
-                                                            --dest_folder path/to/patches \
+  python projects/solarPanels/dataset/create_dataset_patches.py --image_folder $destFolder_800x600 \
+                                                            --annotation_file $destFolder_800x600/val.json \
+                                                            --dest_folder $destFolder_224x224 \
                                                             --patch_size 224 224 \
                                                             --num_patches_random 5 \
                                                             --num_patches_per_annotation 5 \
                                                             --jitter 25 25;
 
-  python projects/solarPanels/dataset/create_dataset_patches.py --image_folder path/to/images \
-                                                            --annotation_file path/to/images/test.json \
-                                                            --dest_folder path/to/patches \
-                                                            --patch_size 224 224 \
-                                                            --num_patches_random 5 \
-                                                            --num_patches_per_annotation 5 \
-                                                            --jitter 25 25;
-
-  # RGB only
-  python projects/solarPanels/dataset/create_dataset_patches.py --image_folder path/to/images_rgb \
-                                                            --annotation_file path/to/images_rgb/train.json \
-                                                            --dest_folder path/to/patches_rgb \
-                                                            --patch_size 224 224 \
-                                                            --num_patches_random 5 \
-                                                            --num_patches_per_annotation 5 \
-                                                            --jitter 25 25;
-
-  python projects/solarPanels/dataset/create_dataset_patches.py --image_folder path/to/images_rgb \
-                                                            --annotation_file path/to/images_rgb/val.json \
-                                                            --dest_folder path/to/patches_rgb \
-                                                            --patch_size 224 224 \
-                                                            --num_patches_random 5 \
-                                                            --num_patches_per_annotation 5 \
-                                                            --jitter 25 25;
-
-  python projects/solarPanels/dataset/create_dataset_patches.py --image_folder path/to/images_rgb \
-                                                            --annotation_file path/to/images_rgb/test.json \
-                                                            --dest_folder path/to/patches_rgb \
+  python projects/solarPanels/dataset/create_dataset_patches.py --image_folder $destFolder_800x600 \
+                                                            --annotation_file $destFolder_800x600/test.json \
+                                                            --dest_folder $destFolder_224x224 \
                                                             --patch_size 224 224 \
                                                             --num_patches_random 5 \
                                                             --num_patches_per_annotation 5 \
@@ -132,11 +145,20 @@ dataset by also cropping five patches at random in each image:
 
 To replicate results with slope and aspect, we can add those into a separate directory:
 ```bash
-  python projects/solarPanels/dataset/calculate_slope_aspect.py --image_folder path/to/patches \
+  python projects/solarPanels/dataset/calculate_slope_aspect.py --image_folder $destFolder_224x224 \
                                                                 --dem_ordinal 4 \
-                                                                --dest_folder /path/to/patches_slope_aspect;
+                                                                --dest_folder ${destFolder_224x224}_slope_aspect;
 ```
 If a separate directory is specified (parameter `--dest_folder`), any annotation metadata files (*.json) will be copied and modified as well.
+
+
+Finally, you may need to modify the source paths in the [configuration scripts](configs), files `base_*.yaml`:
+```yaml
+# ...
+DATASETS:
+  DATA_ROOT: "patches"
+# ...
+```
 
 
 ### 2. Train models
