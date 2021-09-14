@@ -8,5 +8,9 @@ SOLVER:
 OUTPUT_DIR: "cnn_states/solarPanels/frcnn_r50"
 MODEL:
   META_ARCHITECTURE: "UNet"
+  DEPTH: 5
+  NUM_FEATURES_EXPONENT: 6
+  BATCH_NORM: false
+  UPSAMPLING_MODE: "upsample"   # {"upsample", "upconv"}
 INPUT:
   NUM_CLASSES: 2    # sem.seg. needs extra background class (0)
