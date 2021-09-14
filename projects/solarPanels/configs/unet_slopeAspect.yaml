@@ -1,11 +1,11 @@
-_BASE_: base_solarPanels.yaml
+_BASE_: base_solarPanels_slopeAspect.yaml
 SOLVER:
   BASE_LR: 0.0001
   IMS_PER_BATCH: 2
   STEPS:
   - 80000
   MAX_ITER: 500000
-OUTPUT_DIR: "cnn_states/solarPanels/unet"
+OUTPUT_DIR: "cnn_states/solarPanels/unet_slopeAspect"
 MODEL:
   META_ARCHITECTURE: "UNet"
   DEPTH: 5
