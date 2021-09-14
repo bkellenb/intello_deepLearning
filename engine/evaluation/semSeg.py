@@ -35,8 +35,9 @@ class SemSegEvaluator(DatasetEvaluator):
     def evaluate(self):
         #TODO: logger; saving
         results = OrderedDict()
-        results['OA'] = {'OA': self._oa}
-        resultStr = f'OA:   {self._oa}\n'
+        oa = self._oa / self._num_samples
+        results['OA'] = {'OA': oa}
+        resultStr = f'OA:   {oa}\n'
         resultStr += 'Class\tPrecision\tRecall\n-------------------------\n'
         results['prec'] = {}
         results['rec'] = {}

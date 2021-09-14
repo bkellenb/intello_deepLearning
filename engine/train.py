@@ -70,9 +70,6 @@ def do_train(cfg, model, resume=True):
     max_iter = cfg.SOLVER.MAX_ITER
     print(f'\tmodel iter:\t\t{start_iter}/{max_iter}, resume: {resume}')
 
-    #TODO
-    do_test(cfg, model)
-
     model.train()
     optimiser = build_optimizer(cfg, model)
     scheduler = build_lr_scheduler(cfg, optimiser)
@@ -142,7 +139,9 @@ def do_test(cfg, model):
     results = inference_on_dataset(model, dataLoader, evaluator)
     if comm.is_main_process():
         logger.info("Evaluation results for {} in csv format:".format(dsName))
-        print_csv_format(results)
+        if not isinstance(evClass, SemSegEvaluator):
+            #TODO: make custom evaluator compatible with Detectron2 format
+            print_csv_format(results)
     if len(results) == 1:
         results = list(results.values())[0]
     return results
