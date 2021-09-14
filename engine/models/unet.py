@@ -86,7 +86,7 @@ class UNet(nn.Module):
                 sz = img.size()
                 segmask = util.instances_to_segmask(item['instances'], (sz[1], sz[2]), class_offset=1)      # zero-class = negative
                 pred = self._forward_image(item['image'].unsqueeze(0))
-                loss += self.loss(pred, segmask.unsqueeze(0))
+                loss += self.loss(pred, segmask.unsqueeze(0).to(self.device))
             loss /= len(items)
             return {
                 'CE': loss
