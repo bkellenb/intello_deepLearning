@@ -29,8 +29,8 @@ from engine import util
 
 
 driver = ogr.GetDriverByName('ESRI Shapefile')      # need SHP driver because the GeoJSON one is buggy
-srs =  osr.SpatialReference()
-srs.ImportFromEPSG(4326)
+srs = osr.SpatialReference()
+srs.ImportFromEPSG(31370)
 
 
 def _create_layer(outFile, layerName):
@@ -65,10 +65,6 @@ def predict(cfg, images, model, visualise=False, outputDir=None, outputSingleFil
 
     # iterate over big images
     for idx, ii in enumerate(tqdm(images)):
-
-        # #TODO:
-        # if idx == 10:
-        #     break
 
         img, _, transform = util.loadImage(ii['file_name'], cfg.INPUT.NORMALISATION, False)
 
@@ -105,8 +101,8 @@ def predict(cfg, images, model, visualise=False, outputDir=None, outputSingleFil
                         for poly in polygons.points:
                             # offset w.r.t. patch/image origin
                             poly = poly.astype(np.float32)
-                            poly[:,0] += yc.item()
-                            poly[:,1] += xc.item()
+                            poly[:,0] += xc.item()
+                            poly[:,1] += yc.item()
 
                             # append to image-wide list for visualisation
                             instances.append(poly)
@@ -151,6 +147,8 @@ def predict(cfg, images, model, visualise=False, outputDir=None, outputSingleFil
             for i in instances:
                 poly = Polygon(i, fc=(0,0,1,0.5), ec=(0,0,1,1), lw=0.1)
                 ax.add_patch(poly)
+                plt.draw()
+                plt.pause(0.0001)
             plt.title(ii['file_name'])
             plt.waitforbuttonpress()
 

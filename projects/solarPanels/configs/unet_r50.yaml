@@ -7,10 +7,6 @@ SOLVER:
   MAX_ITER: 500000
 OUTPUT_DIR: "cnn_states/solarPanels/frcnn_r50"
 MODEL:
-  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
-  MASK_ON: False
-  RESNETS:
-    DEPTH: 50
-  ROI_HEADS:
-    NUM_CLASSES: 1
-  REPLACE_BATCH_NORM: False
+  META_ARCHITECTURE: "UNet"
+INPUT:
+  NUM_CLASSES: 2    # sem.seg. needs extra background class (0)

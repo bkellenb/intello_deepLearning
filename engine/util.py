@@ -19,7 +19,7 @@ import detectron2.utils.comm as comm
 from detectron2.modeling import build_model
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.layers import FrozenBatchNorm2d, NaiveSyncBatchNorm
-
+from detectron2.structures.masks import polygons_to_bitmask
 
 
 IMAGE_EXTENSIONS = (
@@ -121,7 +121,7 @@ def loadModel(cfg, resume=True, startIter=None):
         print(f'Could not load pre-trained model weights ("{e}").')
 
     # modify model to accommodate a different number of input bands (if needed)         TODO: only works for Faster R-CNN and Mask R-CNN right now
-    if cfg.INPUT.NUM_INPUT_CHANNELS != 3:
+    if cfg.INPUT.NUM_INPUT_CHANNELS != 3 and cfg.MODEL.META_ARCHITECTURE != 'UNet':
         # replicate weights and pixel mean and std
         numRep = math.ceil(cfg.INPUT.NUM_INPUT_CHANNELS / 3)
         weight = model.backbone.stem.conv1.weight
@@ -179,3 +179,20 @@ def loadModel(cfg, resume=True, startIter=None):
 
     # model.load_state_dict(torch.load("./model_final.pth", map_location='cpu'))
     return model, checkpointer, startIter
+
+
+def instances_to_segmask(instances, size, class_offset=0):
+    '''
+        Receives Detectron2-formatted instances and creates a semantic
+        segmentation mask according to the specified size (tuple of W, H). Adds
+        the indicated offset to the class ordinals. Note that any pixels where
+        instances overlap will be assigned the last instance in order.
+    '''
+    segmask = torch.zeros(size, dtype=torch.long)
+    for i in range(len(instances)):
+        inst = instances[i]
+        if hasattr(inst, 'gt_masks'):
+            for p, poly in enumerate(inst.gt_masks.polygons):
+                mask = polygons_to_bitmask(poly, height=size[0], width=size[1])
+                segmask[mask] = inst.gt_classes[p] + class_offset
+    return segmask

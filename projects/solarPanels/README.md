@@ -4,6 +4,7 @@ This project employs deep learning models to delineate solar panels in aerial im
 Currently supported tasks and models:
 * Instance segmentation: Mask R-CNN
 * Detection: Faster R-CNN
+* Semantic segmentation: U-Net _(beta)_
 
 
 ## Data sources

@@ -24,7 +24,7 @@ from detectron2.solver import build_lr_scheduler, build_optimizer
 from detectron2.evaluation import COCOEvaluator, inference_on_dataset, print_csv_format
 from detectron2.utils.events import EventStorage
 
-from engine import util
+from engine import util, SemSegEvaluator
 from engine.dataMapper import MultibandMapper
 
 
@@ -70,6 +70,9 @@ def do_train(cfg, model, resume=True):
     max_iter = cfg.SOLVER.MAX_ITER
     print(f'\tmodel iter:\t\t{start_iter}/{max_iter}, resume: {resume}')
 
+    #TODO
+    do_test(cfg, model)
+
     model.train()
     optimiser = build_optimizer(cfg, model)
     scheduler = build_lr_scheduler(cfg, optimiser)
@@ -109,6 +112,7 @@ def do_train(cfg, model, resume=True):
                 cfg.TEST.EVAL_PERIOD > 0
                 and (iteration + 1) % cfg.TEST.EVAL_PERIOD == 0
                 and iteration != max_iter - 1
+                and cfg.MODEL.META_ARCHITECTURE != 'UNet'       #TODO: write evaluator for UNet
             ):
                 do_test(cfg, model)
                 comm.synchronize()
@@ -130,7 +134,11 @@ def do_test(cfg, model):
 
     model.eval()
 
-    evaluator = COCOEvaluator(dsName, output_dir=os.path.join(cfg.OUTPUT_DIR, "inference", dsName))
+    if cfg.MODEL.META_ARCHITECTURE == 'UNet':
+        evClass = SemSegEvaluator   #TODO: requires files for GT masks; write custom evaluator
+    else:
+        evClass = COCOEvaluator
+    evaluator = evClass(dsName, output_dir=os.path.join(cfg.OUTPUT_DIR, "inference", dsName))
     results = inference_on_dataset(model, dataLoader, evaluator)
     if comm.is_main_process():
         logger.info("Evaluation results for {} in csv format:".format(dsName))
@@ -144,7 +152,7 @@ def do_test(cfg, model):
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Train Detectron2 models.')
-    parser.add_argument('--config', type=str, default='projects/solarPanels/configs/maskrcnn_r50_slopeAspect.yaml',
+    parser.add_argument('--config', type=str, default='projects/solarPanels/configs/unet_r50.yaml',
                         help='Path to the config.yaml file to use on this machine.')
     parser.add_argument('--resume', type=int, default=1,
                         help='Whether to resume model training or start from pre-trained base.')
