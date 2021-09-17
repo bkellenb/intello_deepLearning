@@ -21,3 +21,6 @@ detectron2
 
 # converting masks to polygons
 imantics
+
+# regionprops
+scikit-image

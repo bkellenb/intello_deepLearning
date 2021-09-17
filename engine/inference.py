@@ -13,6 +13,7 @@ import numpy as np
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 from matplotlib.patches import Polygon
+from skimage import measure
 
 from osgeo import ogr, osr
 ogr.UseExceptions()
@@ -74,30 +75,55 @@ def predict(cfg, images, model, visualise=False, outputDir=None, outputSingleFil
             out_layer = _create_layer(out_file, imgName)
 
         # evaluate patch-wise
-        instances = []
+        instances_out = []
         geoms = {}
         sz = img.shape
         posY, posX = torch.meshgrid((torch.arange(0, sz[1], imgSize[0]), torch.arange(0, sz[2], imgSize[1])))
         for y in range(posY.size(0)):
             for x in range(posX.size(1)):
-                # crop patch
+                # crop patch and pad with zeros if needed (when exceeding image borders)
                 yc, xc = posY[y,x], posX[y,x]
-                patch = img[:, yc:(yc+imgSize[0]), xc:(xc+imgSize[1])]
-                patch = torch.from_numpy(patch)
+                crop = img[:, yc:(yc+imgSize[0]), xc:(xc+imgSize[1])]
+                crop = torch.from_numpy(crop)
+                patch = torch.zeros((img.shape[0], imgSize[0], imgSize[1]), dtype=crop.dtype)
+                patch[:, :crop.size(1), :crop.size(2)] = crop
 
                 # get prediction
-                pred = model([{'image': patch}])
-                pred = pred[0]['instances']
-                if len(pred):
+                with torch.no_grad():
+                    pred = model([{'image': patch}])
 
-                    for pr in range(len(pred)):
-                        
+                if isinstance(pred[0], torch.Tensor):
+                    # semantic segmentation output - calculate polygons using regionprops
+                    pred_conf, pred = pred[0].squeeze().softmax(0).max(0)
+                    pred = pred.cpu().numpy()
+                    pred_conf = pred_conf.cpu().numpy()
+                    pred = measure.regionprops(measure.label(pred))
+                    # create masks from regionprops
+                    instances = []
+                    for pr in pred:
+                        mask = np.zeros((patch.size(1), patch.size(2)), dtype=np.bool8)
+                        mask[pr.bbox[0]:pr.bbox[2], pr.bbox[1]:pr.bbox[3]] = pr.convex_image
+                        instances.append({
+                            'mask': mask,
+                            'label': pr.label,
+                            'conf': np.mean(pred_conf[mask]).tolist()
+                        })
+                else:
+                    pred = pred[0]['instances']
+                    instances = [{
+                        'mask': pred.pred_masks[pr,...].cpu().numpy(),
+                        'label': pred.pred_classes[pr].item(),
+                        'conf': pred.scores[pr].item()
+                    } for pr in range(len(pred))]
+
+                if len(instances):
+                    for inst in instances:
                         #TODO: skip step if no masks (e.g., Faster R-CNN) and export bboxes instead
-                        mask = pred.pred_masks[pr,...]
-                        label = pred.pred_classes[pr].item()
+                        mask = inst['mask']
+                        label = inst['label']
                         if label not in geoms:
                             geoms[label] = []
-                        polygons = Mask(mask.cpu().numpy()).polygons()
+                        polygons = Mask(mask).polygons()
                         for poly in polygons.points:
                             # offset w.r.t. patch/image origin
                             poly = poly.astype(np.float32)
@@ -105,7 +131,7 @@ def predict(cfg, images, model, visualise=False, outputDir=None, outputSingleFil
                             poly[:,1] += yc.item()
 
                             # append to image-wide list for visualisation
-                            instances.append(poly)
+                            instances_out.append(poly)
 
                             # append to output layer
                             if saveOutputs:
@@ -131,7 +157,7 @@ def predict(cfg, images, model, visualise=False, outputDir=None, outputSingleFil
                                 feature.SetField('img_id', ii['image_id'])
                                 feature.SetField('img_name', ii['file_name'])
                                 feature.SetField('class_id', label)
-                                feature.SetField('conf', pred.scores[pr].item())
+                                feature.SetField('conf', inst['conf'])
                                 try:
                                     out_layer.CreateFeature(feature)
                                 except:
@@ -144,7 +170,7 @@ def predict(cfg, images, model, visualise=False, outputDir=None, outputSingleFil
             plt.clf()
             plt.imshow(img_vis)
             ax = plt.gca()
-            for i in instances:
+            for i in instances_out:
                 poly = Polygon(i, fc=(0,0,1,0.5), ec=(0,0,1,1), lw=0.1)
                 ax.add_patch(poly)
                 plt.draw()
@@ -173,11 +199,11 @@ def predict(cfg, images, model, visualise=False, outputDir=None, outputSingleFil
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Predict on large images, optionally visualise and/or save in geospatial format.')
-    parser.add_argument('--config', type=str, default='projects/solarPanels/configs/maskrcnn_r50_slopeAspect.yaml',
+    parser.add_argument('--config', type=str, default='projects/solarPanels/configs/unet.yaml',
                         help='Path to the config.yaml file to use on this machine.')
-    parser.add_argument('--image_folder', type=str, default='/data/datasets/INTELLO/solarPanels/images_slope_aspect',
+    parser.add_argument('--image_folder', type=str, default='/data/datasets/INTELLO/solarPanels/images',
                         help='Directory of images to predict on.')
-    parser.add_argument('--vis', type=int, default=1,
+    parser.add_argument('--vis', type=int, default=0,
                         help='Whether to visualise predictions or not.')
     parser.add_argument('--output', type=str, default='predictions',
                         help='Destination to save predictions to. Note that this may be interpreted as a folder or a file depending on the model.')
