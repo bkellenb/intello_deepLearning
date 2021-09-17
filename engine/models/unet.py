@@ -31,7 +31,10 @@ class UNet(nn.Module):
         self.register_buffer('pixel_mean', torch.Tensor(cfg.MODEL.get('PIXEL_MEAN')).view(-1, 1, 1), False)
         self.register_buffer('pixel_std', torch.Tensor(cfg.MODEL.get('PIXEL_STD')).view(-1, 1, 1), False)
 
-        self.loss = nn.CrossEntropyLoss()
+        lossWeights = cfg.MODEL.get('LOSS_WEIGHTS', None)
+        if lossWeights is not None:
+            lossWeights = torch.tensor(lossWeights).to(self.device)
+        self.loss = nn.CrossEntropyLoss(weight=lossWeights)
 
         # build model
         prev_channels = self.in_channels

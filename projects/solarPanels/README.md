@@ -20,14 +20,13 @@ Experiments have been conducted using the following types of remote sensing imag
 
 Statistical figures below are calculated on held-out validation set using Detectron2's COCOEvaluator.
 
-**Mask R-CNN (RGB+DHM+DSM)**
+### Mask R-CNN (RGB+DHM+DSM)
 
 _(Iteration 500'000)_
 
 `python engine/test.py --config projects/solarPanels/configs/maskrcnn_r50.yaml --vis 0`
 
-BBOX
-```
+**BBOX**
  Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.065
  Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.157
  Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.041
@@ -40,10 +39,8 @@ BBOX
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.074
  Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.254
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.250
-```
 
-SEGM
-```
+**SEGM**
  Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.046
  Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.135
  Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.019
@@ -56,12 +53,31 @@ SEGM
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.048
  Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.251
  Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.000
-```
+
 
 
 **Mask R-CNN (RGB+DHM+DSM+slope+aspect)**
 
 _(coming soon)_
+
+
+### Faster R-CNN (RGB+DHM+DSM)
+
+_(Iteration 500'000)_
+
+**BBOX**
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.020
+ Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.059
+ Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.011
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.004
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.097
+ Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.000
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.022
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.078
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.104
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.080
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.225
+ Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.000
 
 
 

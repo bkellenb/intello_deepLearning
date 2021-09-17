@@ -1,6 +1,6 @@
 _BASE_: base_solarPanels.yaml
 SOLVER:
-  BASE_LR: 0.0001
+  BASE_LR: 0.001
   IMS_PER_BATCH: 2
   STEPS:
   - 80000
@@ -12,5 +12,6 @@ MODEL:
   NUM_FEATURES_EXPONENT: 6
   BATCH_NORM: false
   UPSAMPLING_MODE: "upsample"   # {"upsample", "upconv"}
+  LOSS_WEIGHTS: [0.1, 1.0]
 INPUT:
   NUM_CLASSES: 2    # sem.seg. needs extra background class (0)
