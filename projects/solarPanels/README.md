@@ -24,60 +24,115 @@ Statistical figures below are calculated on held-out validation set using Detect
 
 _(Iteration 500'000)_
 
-`python engine/test.py --config projects/solarPanels/configs/maskrcnn_r50.yaml --vis 0`
+`python engine/test.py --config projects/solarPanels/configs/maskrcnn_r50.yaml`
 
 **BBOX**
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.065
- Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.157
- Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.041
- Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.049
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.145
- Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.038
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.054
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.109
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.109
- Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.074
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.254
- Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.250
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.065 |
+| Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.157 |
+| Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.041 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.049 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.145 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.038 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.054 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.109 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.109 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.074 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.254 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.250 |
 
 **SEGM**
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.046
- Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.135
- Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.019
- Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.025
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.184
- Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.000
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.043
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.082
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.082
- Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.048
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.251
- Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.000
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.046 |
+| Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.135 |
+| Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.019 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.025 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.184 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.000 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.043 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.082 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.082 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.048 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.251 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.000 |
 
 
 
 **Mask R-CNN (RGB+DHM+DSM+slope+aspect)**
 
-_(coming soon)_
+_(Iteration 500'000)_
+
+`python engine/test.py --config projects/solarPanels/configs/maskrcnn_r50_slopeAspect.yaml`
+
+**BBOX**
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.043 |
+| Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.108 |
+| Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.019 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.020 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.157 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.030 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.035 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.078 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.078 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.042 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.228 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.212 |
+
+**SEGM**
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.033 |
+| Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.085 |
+| Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.015 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.012 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.150 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.000 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.030 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.054 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.054 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.022 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.211 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.000 |
+
 
 
 ### Faster R-CNN (RGB+DHM+DSM)
 
 _(Iteration 500'000)_
 
+`python engine/test.py --config projects/solarPanels/configs/frcnn_r50.yaml`
+
 **BBOX**
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.020
- Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.059
- Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.011
- Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.004
- Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.097
- Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.000
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.022
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.078
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.104
- Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.080
- Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.225
- Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.000
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.020 |
+| Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.059 |
+| Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.011 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.004 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.097 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.000 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.022 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.078 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.104 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.080 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.225 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.000 |
+
+
+
+### U-Net (RGB+DHM+DSM)
+
+_(Iteration 500'000)_
+
+`python engine/test.py --config projects/solarPanels/configs/unet.yaml`
+
+| Precision | 0.296 |
+| Recall | 0.258 |
+
+
+
+### U-Net (RGB+DHM+DSM+slope+aspect)
+
+_(Iteration 170'000, trained and validated on images of size 800x600)_
+
+`python engine/test.py --config projects/solarPanels/configs/unet_slopeAspect_800x600.yaml`
+
+| Precision | 0.338 |
+| Recall | 0.404 |
 
 
 

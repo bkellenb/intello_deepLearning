@@ -7,6 +7,7 @@
 import os
 import glob
 import math
+import copy
 import numpy as np
 
 import rasterio
@@ -20,6 +21,8 @@ from detectron2.modeling import build_model
 from detectron2.checkpoint import DetectionCheckpointer
 from detectron2.layers import FrozenBatchNorm2d, NaiveSyncBatchNorm
 from detectron2.structures.masks import polygons_to_bitmask
+from detectron2.data.catalog import DatasetCatalog, Metadata, MetadataCatalog
+from detectron2.data.datasets import register_coco_instances
 
 
 IMAGE_EXTENSIONS = (
@@ -59,6 +62,28 @@ def load_image_folder(directory):
     # bring into minimal Detectron2-compliant form
     images = [{'image_id': idx, 'file_name': i, 'annotations': []} for idx, i in enumerate(images)]
     return images
+
+
+
+def load_config_dataset(cfg, split='train'):
+    '''
+        Currently only supports COCO-formatted datasets.
+    '''
+    dsName = cfg.DATASETS.NAME + '_' + split
+    register_coco_instances(dsName, {},
+        os.path.join(cfg.DATASETS.DATA_ROOT, split+'.json'),
+        cfg.DATASETS.DATA_ROOT)
+    setattr(cfg.DATASETS, split.upper(), dsName)
+    dataset = DatasetCatalog.get(dsName)
+
+    # also register "stuff classes" for semantic segmentation models and mask background class
+    metadata = MetadataCatalog.get(dsName)
+    if hasattr(metadata, 'thing_classes') and not hasattr(metadata, 'stuff_classes'):
+        stuff_classes = copy.deepcopy(metadata.thing_classes)
+        stuff_classes.insert(0, 'background')
+        MetadataCatalog.get(dsName).stuff_classes = stuff_classes
+
+    return dataset, dsName
 
 
 

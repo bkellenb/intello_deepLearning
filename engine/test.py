@@ -25,18 +25,18 @@ from engine.evaluation.semSeg import SemSegEvaluator
 
 
 
-def load_config_dataset(cfg, split='train'):
-    '''
-        Currently only supports COCO-formatted datasets.
-    '''
-    dsName = cfg.DATASETS.NAME + '_' + split
-    register_coco_instances(dsName, {},
-        os.path.join(cfg.DATASETS.DATA_ROOT, split+'.json'),
-        cfg.DATASETS.DATA_ROOT)
-    setattr(cfg.DATASETS, split.upper(), dsName)
+# def load_config_dataset(cfg, split='train'):
+#     '''
+#         Currently only supports COCO-formatted datasets.
+#     '''
+#     dsName = cfg.DATASETS.NAME + '_' + split
+#     register_coco_instances(dsName, {},
+#         os.path.join(cfg.DATASETS.DATA_ROOT, split+'.json'),
+#         cfg.DATASETS.DATA_ROOT)
+#     setattr(cfg.DATASETS, split.upper(), dsName)
 
-    dataset = DatasetCatalog.get(dsName)
-    return dataset, dsName
+#     dataset = DatasetCatalog.get(dsName)
+#     return dataset, dsName
 
 
 
@@ -83,7 +83,12 @@ def predict(cfg, dataLoader, dsName, model, evaluate=False, visualise=False):
                 out_pred = v_pred.draw_instance_predictions(pred[0]['instances'].to('cpu'))
                 out_pred = out_pred.get_image()[:, :, ::-1]
             else:
-                out_pred = pred[0].squeeze().argmax(0).to('cpu')        #TODO: draw semi-transparently on image
+                # segmentation: compose image with semi-transparent overlay manually
+                out_pred = pred[0].squeeze().argmax(0).to('cpu')        #TODO: Detectron2's visualizer does not support "ignore_index" attribute
+                v_pred = Visualizer(img_vis, MetadataCatalog.get(dsName), scale=2.0, instance_mode=ColorMode.IMAGE_BW)
+                out_pred = v_pred.draw_sem_seg(out_pred)
+                out_pred = out_pred.get_image()[:, :, ::-1]
+                
 
             extent = data[0]['image_coords']
             loc = ((extent[0][0]+extent[2][0])/2, (extent[1][1]+extent[0][1])/2)
@@ -136,7 +141,7 @@ if __name__ == '__main__':
 
     dsName = None
     if args.image_folder is not None:
-        load_config_dataset(cfg, split='train')     # register dataset for metadata
+        util.load_config_dataset(cfg, split='train')     # register dataset for metadata
         dataset = util.load_image_folder(args.image_folder)
         evaluate = False        # cannot evaluate without ground truth
         print(f'\tImage folder:\t\t\t"{args.image_folder}"')
@@ -144,7 +149,7 @@ if __name__ == '__main__':
         cfg.SOLVER.IMS_PER_BATCH = 1
         # if args.split != 'train':
         #     load_config_dataset(cfg, split='train')     # register dataset for metadata
-        dataset, dsName = load_config_dataset(cfg, args.split)
+        dataset, dsName = util.load_config_dataset(cfg, args.split)
         print(f'\tdataset:\t\t"{cfg.DATASETS.NAME}", split: {args.split}, no. images: {len(dataset)}')
         print(f'\tevaluate:\t\t{bool(args.evaluate)}')
 

@@ -66,6 +66,7 @@ class UNet(nn.Module):
 
     
     def _forward_image(self, x):
+        sz = x.size()
         x = x.to(self.device)
         blocks = []
         for i, down in enumerate(self.down_path):
@@ -77,7 +78,14 @@ class UNet(nn.Module):
         for i, up in enumerate(self.up_path):
             x = up(x, blocks[-i - 1])
 
-        return self.last(x)
+        x = self.last(x)
+
+        #TODO: interpolate if output size is not equal to input size (crude hack)
+        sz_o = x.size()
+        if sz[2] != sz_o[2] or sz[3] != sz_o[3]:
+            x = F.interpolate(x, (sz[2], sz[3]))
+
+        return x
 
 
 

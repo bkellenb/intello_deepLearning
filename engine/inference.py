@@ -174,7 +174,7 @@ def predict(cfg, images, model, visualise=False, outputDir=None, outputSingleFil
                 poly = Polygon(i, fc=(0,0,1,0.5), ec=(0,0,1,1), lw=0.1)
                 ax.add_patch(poly)
                 plt.draw()
-                plt.pause(0.0001)
+                # plt.pause(0.0001)
             plt.title(ii['file_name'])
             plt.waitforbuttonpress()
 

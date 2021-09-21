@@ -1,0 +1,17 @@
+_BASE_: base_solarPanels_slopeAspect_800x600.yaml
+SOLVER:
+  BASE_LR: 0.001
+  IMS_PER_BATCH: 2
+  STEPS:
+  - 80000
+  MAX_ITER: 500000
+OUTPUT_DIR: "cnn_states/solarPanels/unet_slopeAspect_800x600"
+MODEL:
+  META_ARCHITECTURE: "UNet"
+  DEPTH: 5
+  NUM_FEATURES_EXPONENT: 6
+  BATCH_NORM: false
+  UPSAMPLING_MODE: "upsample"   # {"upsample", "upconv"}
+  LOSS_WEIGHTS: [0.1, 1.0]
+INPUT:
+  NUM_CLASSES: 2    # sem.seg. needs extra background class (0)
