@@ -106,10 +106,15 @@ def generate_coco_dataset_fishnet(imageSources, fishnetLayer, annotationLayer, a
         
         out_img, out_transform, out_meta = None, None, None
 
-        for img in imgs:
+        for sourceIdx, img in enumerate(imgs):
             img_i, img_t, img_m = img.crop(pCoords)
 
             img_i = np.transpose(img_i, (1,2,0)).astype(np.uint8)
+
+            # optionally limit to specified layers (e.g., for NIR WMS we discard the red and green bands)
+            layers = imageSources[sourceIdx].get('layers', None)
+            if layers is not None:
+                img_i = img_i[:,:,layers]
 
             sz = img_i.shape
             if sz[0] != imageSize[1] or sz[1] != imageSize[0]:
@@ -322,7 +327,7 @@ if __name__ == '__main__':
                         help='Path to the annotation layer (ESRI Shapefile) that contains the actual label polygons')
     parser.add_argument('--anno_field', type=str, default='Type',
                         help='Name of the attribute field of the annotation layer that determines the object class')
-    parser.add_argument('--dest_folder', type=str, default='/data/datasets/INTELLO/solarPanels',
+    parser.add_argument('--dest_folder', type=str, default='/data/datasets/INTELLO/solarPanels/patches_800x600_slope_aspect_ir',
                         help='Destination directory to save patches and annotations (COCO format) into')
     parser.add_argument('--image_size', type=int, nargs=2, default=[800, 600],
                         help='Output image size in pixels; width and height (default: [800, 600])')

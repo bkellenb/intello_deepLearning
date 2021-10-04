@@ -165,24 +165,21 @@ These inputs are then used to create a dataset of images (default size 800x600) 
                                                             --dest_folder $destFolder_800x600 \
                                                             --train_frac 0.6 \
                                                             --val_frac 0.1 \
-                                                            --srs EPSG:31370 \
-                                                            --layers ORTHO_2020 \
-                                                            --image_size 800 600 \
-                                                            --image_format image/tiff;
+                                                            --image_size 800 600;
 ```
 
 Next, we merge all categories ("warm water", "electricity", "unknown") into one ("solar panel"):
 ```bash
-  python projects/solarPanels/dataset/coco_merge_categories.py --annotation_file $destFolder_800x600/train.json \
-                                                            --destination_file $destFolder_800x600/train.json \
+  python projects/solarPanels/dataset/coco_merge_categories.py --annotation_file ${destFolder_800x600}/train.json \
+                                                            --destination_file ${destFolder_800x600}/train.json \
                                                             --mapping_file projects/solarPanels/dataset/category_map.json;
 
-  python projects/solarPanels/dataset/coco_merge_categories.py --annotation_file $destFolder_800x600/val.json \
-                                                            --destination_file $destFolder_800x600/val.json \
+  python projects/solarPanels/dataset/coco_merge_categories.py --annotation_file ${destFolder_800x600}/val.json \
+                                                            --destination_file ${destFolder_800x600}/val.json \
                                                             --mapping_file projects/solarPanels/dataset/category_map.json;
 
-  python projects/solarPanels/dataset/coco_merge_categories.py --annotation_file $destFolder_800x600/test.json \
-                                                            --destination_file $destFolder_800x600/test.json \
+  python projects/solarPanels/dataset/coco_merge_categories.py --annotation_file ${destFolder_800x600}/test.json \
+                                                            --destination_file ${destFolder_800x600}/test.json \
                                                             --mapping_file projects/solarPanels/dataset/category_map.json;
 ```
 
@@ -195,7 +192,7 @@ dataset by also cropping five patches at random in each image:
 ```bash
 
   python projects/solarPanels/dataset/create_dataset_patches.py --image_folder $destFolder_800x600 \
-                                                            --annotation_file $destFolder_800x600/train.json \
+                                                            --annotation_file ${destFolder_800x600}/train.json \
                                                             --dest_folder $destFolder_224x224 \
                                                             --patch_size 224 224 \
                                                             --num_patches_random 5 \
@@ -203,7 +200,7 @@ dataset by also cropping five patches at random in each image:
                                                             --jitter 25 25;
 
   python projects/solarPanels/dataset/create_dataset_patches.py --image_folder $destFolder_800x600 \
-                                                            --annotation_file $destFolder_800x600/val.json \
+                                                            --annotation_file ${destFolder_800x600}/val.json \
                                                             --dest_folder $destFolder_224x224 \
                                                             --patch_size 224 224 \
                                                             --num_patches_random 5 \
@@ -211,7 +208,7 @@ dataset by also cropping five patches at random in each image:
                                                             --jitter 25 25;
 
   python projects/solarPanels/dataset/create_dataset_patches.py --image_folder $destFolder_800x600 \
-                                                            --annotation_file $destFolder_800x600/test.json \
+                                                            --annotation_file ${destFolder_800x600}/test.json \
                                                             --dest_folder $destFolder_224x224 \
                                                             --patch_size 224 224 \
                                                             --num_patches_random 5 \

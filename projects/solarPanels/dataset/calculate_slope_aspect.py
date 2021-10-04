@@ -73,11 +73,11 @@ def calc_slope_aspect(imageFolder, demLayerOrdinal, destFolder=None):
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser(description='Create and append slope and aspect from/to TIFFs.')
-    parser.add_argument('--image_folder', type=str, default='/data/datasets/INTELLO/solarPanels/patches_224x224_5_2',
+    parser.add_argument('--image_folder', type=str, default='/data/datasets/INTELLO/solarPanels/patches_800x600_slope_aspect_ir',
                         help='Base folder where the GeoTIFFs containing the DEM can be found.')
     parser.add_argument('--dem_ordinal', type=int, default=4,
                         help='Index (ordinal) of the layer within the GeoTIFFs where the DEM is located.')
-    parser.add_argument('--dest_folder', type=str, default='/data/datasets/INTELLO/solarPanels/patches_224x224_5_2_slope_aspect',
+    parser.add_argument('--dest_folder', type=str, default='/data/datasets/INTELLO/solarPanels/patches_800x600_slope_aspect_ir',
                         help='Optional destination folder for the augmented images. If not specified, images will be overwritten in-place.')
     args = parser.parse_args()
 

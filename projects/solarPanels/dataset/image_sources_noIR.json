@@ -11,17 +11,6 @@
             }
         },
         {
-            "type": "WMS",
-            "url": "https://geoservices.wallonie.be/arcgis/services/IMAGERIE/ORTHO_2020_IR/MapServer/WMSServer",
-            "wms_meta": {
-                "layers": [],
-                "srs": "EPSG:31370",
-                "size": [800, 600],
-                "format": "image/tiff"
-            },
-            "layers": [0]
-        },
-        {
             "type": "local",
             "path": "/media/bkellenb/eceosrv1_data/Datasets/ISSeP/DD1/ISSeP_DD1/Relief/2019/MNH_ORTHOS_2019/MNH_ORTHOS_2019.tif"
         },
