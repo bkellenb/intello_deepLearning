@@ -22,7 +22,7 @@ from tqdm import tqdm
 import rasterio
 import shapefile
 
-from projects.solarPanels.dataset import FIELD_NAME_VALUES, DataSource, WMSSource
+from projects.solarPanels.dataset import FIELD_NAME_VALUES, LABEL_NAME_CONVERSIONS, DataSource, WMSSource
 
 
 
@@ -165,7 +165,10 @@ def generate_coco_dataset_fishnet(imageSources, fishnetLayer, annotationLayer, a
     anno = shapefile.Reader(annotationLayer)
     anno_raw = anno.shapeRecords()
     for id, anno in enumerate(anno_raw):
-        label = getattr(anno.record, annotationField) + 1   # COCO label classes start at 1
+        label = getattr(anno.record, annotationField)
+        if not isinstance(label, int):
+            label = LABEL_NAME_CONVERSIONS[label]       # convert to ordinal
+        label += 1   # COCO label classes start at 1
         if label not in labelClasses:
             labelClasses[label] = 0
         labelClasses[label] += 1
@@ -321,13 +324,13 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='Create train/val/test split file from fishnet polygons.')
     parser.add_argument('--image_sources', type=str, default='projects/solarPanels/dataset/image_sources.json',
                         help='Path to a JSON file defining the image sources (directories of TIFF files, VRTs; WMS definitions, etc.)')
-    parser.add_argument('--fishnet_file', type=str, default='datasets/solarPanels/annotations/fishnet_Wallonie_200_150m_30_4_2021_BK.shp',
+    parser.add_argument('--fishnet_file', type=str, default='datasets/labels_v2/fishnet_Wallonie_200_150m_12_10_2021.shp',
                         help='Path to the fishnet layer (ESRI Shapefile) that contains perimeter polygons')
-    parser.add_argument('--anno_file', type=str, default='datasets/solarPanels/annotations/SAMPLES_0_SolarPanels_30_4_2021_BK.shp',
+    parser.add_argument('--anno_file', type=str, default='datasets/labels_v2/SAMPLES_0_SolarPanels_12_10_2021.shp',
                         help='Path to the annotation layer (ESRI Shapefile) that contains the actual label polygons')
-    parser.add_argument('--anno_field', type=str, default='Type',
+    parser.add_argument('--anno_field', type=str, default='Classname',
                         help='Name of the attribute field of the annotation layer that determines the object class')
-    parser.add_argument('--dest_folder', type=str, default='/data/datasets/INTELLO/solarPanels/patches_800x600_slope_aspect_ir',
+    parser.add_argument('--dest_folder', type=str, default='/data/datasets/INTELLO/solarPanels/v2/images_800x600',
                         help='Destination directory to save patches and annotations (COCO format) into')
     parser.add_argument('--image_size', type=int, nargs=2, default=[800, 600],
                         help='Output image size in pixels; width and height (default: [800, 600])')

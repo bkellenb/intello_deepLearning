@@ -11,6 +11,7 @@ Currently supported tasks and models:
 
 Experiments have been conducted using the following types of remote sensing imagery:
   * RGB orthoimages from 2020: `https://geoservices.wallonie.be/arcgis/services/IMAGERIE/ORTHO_2020/MapServer/WMSServer`
+  * NIR orthoimages from 2020: `https://geoservices.wallonie.be/arcgis/services/IMAGERIE/ORTHO_2020_IR/MapServer/WMSServer`
   * Digital Height Model (DHM; `MNH_ORTHOS_2019.tif`)
   * Digital Surface Model (DSM; `MNS2019.tif`)
   * Slope and aspect (calculated separately from DHM)
@@ -18,13 +19,74 @@ Experiments have been conducted using the following types of remote sensing imag
 
 ## Current results
 
-Statistical figures below are calculated on held-out validation set using Detectron2's COCOEvaluator.
+Statistical figures below are calculated on held-out validation set using
+Detectron2's COCOEvaluator. Also, they pertain to the initial annotations
+delivered within the INTELLO project. Experiments on the second batch of
+annotations are on the way.
+
+
+### Mask R-CNN (RGB+DHM+DSM+NIR+slope+aspect)
+
+_(Iteration 500'000)_
+
+`python engine/test.py --config projects/solarPanels/configs/maskrcnn_r50_v2.yaml`
+
+**BBOX**
+| Metric                                   | Area        | Detection limits      |
+|------------------------------------------|-------------|-----------------------|
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.012 |
+| Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.020 |
+| Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.015 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.020 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.000 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.000 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.012 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.038 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.038 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.045 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.000 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.000 |
+
+**SEGM**
+| Metric                                   | Area        | Detection limits      |
+|------------------------------------------|-------------|-----------------------|
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.008 |
+| Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.020 |
+| Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.002 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.009 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.000 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.000 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.007 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.025 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.025 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.030 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.000 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.000 |
+
+
+### U-Net (RGB+DHM+DSM+NIR+slope+aspect)
+
+_(Iteration 500'000)_
+
+`python engine/test.py --config projects/solarPanels/configs/unet.yaml`
+
+| Metric | Score |
+|--------|-------|
+| Precision | 0.368 |
+| Recall | 0.277 |
+
+
+
+## Results (V1 dataset)
+
+Below follow results on the first version of the solar panels dataset.
+
 
 ### Mask R-CNN (RGB+DHM+DSM)
 
 _(Iteration 500'000)_
 
-`python engine/test.py --config projects/solarPanels/configs/maskrcnn_r50.yaml`
+`python engine/test.py --config projects/solarPanels/configs/old_labels_v1/maskrcnn_r50.yaml`
 
 **BBOX**
 | Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.065 |
@@ -60,7 +122,7 @@ _(Iteration 500'000)_
 
 _(Iteration 500'000)_
 
-`python engine/test.py --config projects/solarPanels/configs/maskrcnn_r50_slopeAspect.yaml`
+`python engine/test.py --config projects/solarPanels/configs/old_labels_v1/maskrcnn_r50_slopeAspect.yaml`
 
 **BBOX**
 | Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.043 |
@@ -96,7 +158,7 @@ _(Iteration 500'000)_
 
 _(Iteration 500'000)_
 
-`python engine/test.py --config projects/solarPanels/configs/frcnn_r50.yaml`
+`python engine/test.py --config projects/solarPanels/configs/old_labels_v1/frcnn_r50.yaml`
 
 **BBOX**
 | Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.020 |
@@ -118,7 +180,7 @@ _(Iteration 500'000)_
 
 _(Iteration 500'000)_
 
-`python engine/test.py --config projects/solarPanels/configs/unet.yaml`
+`python engine/test.py --config projects/solarPanels/configs/old_labels_v1/unet.yaml`
 
 | Precision | 0.296 |
 | Recall | 0.258 |
@@ -129,7 +191,7 @@ _(Iteration 500'000)_
 
 _(Iteration 170'000, trained and validated on images of size 800x600)_
 
-`python engine/test.py --config projects/solarPanels/configs/unet_slopeAspect_800x600.yaml`
+`python engine/test.py --config projects/solarPanels/configs/old_labels_v1/unet_slopeAspect_800x600.yaml`
 
 | Precision | 0.338 |
 | Recall | 0.404 |
@@ -156,12 +218,12 @@ These inputs are then used to create a dataset of images (default size 800x600) 
     solarPanelsPath=path/to/solarPanels.shp       # location of the Shapefile containing the actual solar panel polygon annotations
     destFolder_800x600=images                     # destination directory for the images cropped with the fishnet polygon extents
     destFolder_224x224=patches                    # destination directory for the smaller patches cropped from the images for model training
-
+    annoField=Classname                           # which polygon attribute to use. V1 labels: "Type", V2 labels: "Classname"
 
     python projects/solarPanels/dataset/create_dataset_fishnet.py --image_sources projects/solarPanels/dataset/image_sources.json \
                                                             --fishnet_file $fishnetPath \
                                                             --anno_file $solarPanelsPath \
-                                                            --anno_field Type \
+                                                            --anno_field $annoField \
                                                             --dest_folder $destFolder_800x600 \
                                                             --train_frac 0.6 \
                                                             --val_frac 0.1 \

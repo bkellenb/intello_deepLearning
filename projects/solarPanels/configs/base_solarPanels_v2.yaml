@@ -1,0 +1,64 @@
+VERSION: 2
+DATALOADER:
+  ASPECT_RATIO_GROUPING: false
+  FILTER_EMPTY_ANNOTATIONS: false
+DATASETS:
+  NAME: "solar_panels_v2"
+  DATA_ROOT: "/data/datasets/INTELLO/solarPanels/v2/images_800x600"
+SOLVER:
+  BASE_LR: 0.001
+  IMS_PER_BATCH: 2
+  STEPS:
+  - 5000
+  - 15000
+  - 30000
+OUTPUT_DIR: "cnn_states/solarPanels/v2"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  MASK_ON: True
+  RESNETS:
+    DEPTH: 50
+  ROI_HEADS:
+    NUM_CLASSES: 1
+  REPLACE_BATCH_NORM: false
+  PIXEL_MEAN:
+    - 96.9273
+    - 104.4484
+    - 101.004616
+    - 142.92957
+    - 3.4425015
+    - 103.78881
+    - 0.82806164
+    - 33.16804
+  PIXEL_STD:
+    - 36.83215
+    - 32.63338
+    - 31.445467
+    - 33.528797
+    - 9.908506
+    - 13.854324
+    - 6.645638
+    - 48.270504
+INPUT:
+  NUM_INPUT_CHANNELS: 8
+  NORMALISATION: 1
+  IMAGE_SIZE: [800, 600]
+AUGMENTATION:
+  - NAME: "RandomBrightness"
+    KWARGS:
+      intensity_min: 0.8
+      intensity_max: 1.2
+  - NAME: "RandomContrast"
+    KWARGS:
+      intensity_min: 0.8
+      intensity_max: 1.2
+  - NAME: "RandomFlip"
+    KWARGS:
+      prob: 0.5
+      horizontal: 0
+      vertical: 1
+  - NAME: "RandomFlip"
+    KWARGS:
+      prob: 0.5
+      horizontal: 1
+      vertical: 0

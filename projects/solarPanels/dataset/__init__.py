@@ -18,9 +18,18 @@ FIELD_NAME_VALUES = {
     'Loca': {
         1: 'on ground',
         2: 'on roof'
+    },
+    'Classname': {
+        1: 'solar panel',
+        2: 'orange rooftop'
     }
 }
 
+# for v2: conversion to ordinals
+LABEL_NAME_CONVERSIONS = {
+    'Solar panels': 0,
+    '\x08Solar panels': 0
+}
 
 
 class DataSource:
@@ -29,7 +38,8 @@ class DataSource:
         self.source = rasterio.open(source)
     
     def __del__(self):
-        self.source.close()
+        if hasattr(self, 'source'):
+            self.source.close()
     
     def crop(self, extent):
         out_img, out_transform = mask.mask(self.source, [geojson.Polygon([[
