@@ -1,0 +1,16 @@
+_BASE_: base_solarPanels_v2.yaml
+SOLVER:
+  BASE_LR: 0.0001
+  IMS_PER_BATCH: 2
+  STEPS:
+  - 80000
+  MAX_ITER: 500000
+OUTPUT_DIR: "cnn_states/solarPanels/v2/frcnn_r50"
+MODEL:
+  WEIGHTS: "detectron2://ImageNetPretrained/MSRA/R-50.pkl"
+  MASK_ON: False
+  RESNETS:
+    DEPTH: 50
+  ROI_HEADS:
+    NUM_CLASSES: 1
+  REPLACE_BATCH_NORM: False

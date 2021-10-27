@@ -29,6 +29,29 @@ annotations are on the way.
 
 _(Iteration 500'000)_
 
+`python engine/test.py --config projects/solarPanels/configs/frcnn_r50.yaml`
+
+**BBOX**
+| Metric                                   | Area        | Detection limits      |
+|------------------------------------------|-------------|-----------------------|
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.001 |
+| Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.005 |
+| Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.000 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.002 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.002 |
+| Average Precision  (AP) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.000 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=  1 ] = 0.001 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets= 10 ] = 0.015 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.020 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area= small | maxDets=100 ] = 0.020 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area=medium | maxDets=100 ] = 0.024 |
+| Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.000 |
+
+
+### Mask R-CNN (RGB+DHM+DSM+NIR+slope+aspect)
+
+_(Iteration 500'000)_
+
 `python engine/test.py --config projects/solarPanels/configs/maskrcnn_r50_v2.yaml`
 
 **BBOX**
