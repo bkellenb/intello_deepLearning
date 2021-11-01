@@ -24,8 +24,14 @@ Detectron2's COCOEvaluator. Also, they pertain to the initial annotations
 delivered within the INTELLO project. Experiments on the second batch of
 annotations are on the way.
 
+Metrics:
+* For object detection (Faster R-CNN) and instance segmentation (Mask R-CNN) models: see [here](https://cocodataset.org/#detection-eval).
+* For semantic segmentation (U-Net) models (calculated over pixels; |.| = count):
+  * Precision: average of |true positives| / (|true positives| + |false positives|) over all object categories
+  * Recall: average of |true positives| / (|true positives| + |false negatives|) over all object categories
 
-### Mask R-CNN (RGB+DHM+DSM+NIR+slope+aspect)
+
+### Faster R-CNN (RGB+DHM+DSM+NIR+slope+aspect)
 
 _(Iteration 500'000)_
 
@@ -112,6 +118,8 @@ _(Iteration 500'000)_
 `python engine/test.py --config projects/solarPanels/configs/old_labels_v1/maskrcnn_r50.yaml`
 
 **BBOX**
+| Metric                                   | Area        | Detection limits      |
+|------------------------------------------|-------------|-----------------------|
 | Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.065 |
 | Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.157 |
 | Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.041 |
@@ -126,6 +134,8 @@ _(Iteration 500'000)_
 | Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.250 |
 
 **SEGM**
+| Metric                                   | Area        | Detection limits      |
+|------------------------------------------|-------------|-----------------------|
 | Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.046 |
 | Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.135 |
 | Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.019 |
@@ -148,6 +158,8 @@ _(Iteration 500'000)_
 `python engine/test.py --config projects/solarPanels/configs/old_labels_v1/maskrcnn_r50_slopeAspect.yaml`
 
 **BBOX**
+| Metric                                   | Area        | Detection limits      |
+|------------------------------------------|-------------|-----------------------|
 | Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.043 |
 | Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.108 |
 | Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.019 |
@@ -162,6 +174,8 @@ _(Iteration 500'000)_
 | Average Recall     (AR) @[ IoU=0.50:0.95 | area= large | maxDets=100 ] = 0.212 |
 
 **SEGM**
+| Metric                                   | Area        | Detection limits      |
+|------------------------------------------|-------------|-----------------------|
 | Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.033 |
 | Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.085 |
 | Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.015 |
@@ -184,6 +198,8 @@ _(Iteration 500'000)_
 `python engine/test.py --config projects/solarPanels/configs/old_labels_v1/frcnn_r50.yaml`
 
 **BBOX**
+| Metric                                   | Area        | Detection limits      |
+|------------------------------------------|-------------|-----------------------|
 | Average Precision  (AP) @[ IoU=0.50:0.95 | area=   all | maxDets=100 ] = 0.020 |
 | Average Precision  (AP) @[ IoU=0.50      | area=   all | maxDets=100 ] = 0.059 |
 | Average Precision  (AP) @[ IoU=0.75      | area=   all | maxDets=100 ] = 0.011 |
