@@ -29,6 +29,7 @@ Metrics:
 * For semantic segmentation (U-Net) models (calculated over pixels; |.| = count):
   * Precision: average of |true positives| / (|true positives| + |false positives|) over all object categories
   * Recall: average of |true positives| / (|true positives| + |false negatives|) over all object categories
+  * Recall at different levels of intersection: detection counts as correct if its intersection with true object is at least the given number of pixels (area). Note that one detection spanning across multiple ground truth objects is not penalised.
 
 
 ### Faster R-CNN (RGB+DHM+DSM+NIR+slope+aspect)
@@ -99,10 +100,21 @@ _(Iteration 500'000)_
 
 `python engine/test.py --config projects/solarPanels/configs/unet.yaml`
 
-| Metric | Score |
-|--------|-------|
-| Precision | 0.368 |
-| Recall | 0.277 |
+**General stats**
+OA:   0.9969
+
+| Class | Precision | Recall |
+| ----- | --------- | ------ |
+| solar panel | 0.3674 | 0.2768 |
+
+**Object recall at different levels of intersection (no. pixels)**
+| Class | Min Area | No. targets | Recall |
+| ----- | -------- | ----------- | ------ |
+| solar panel | 1 | 119.0 | 58.8235 |
+| solar panel | 50 | 114.0 | 46.4912 |
+| solar panel | 100 | 106.0 | 37.7358 |
+| solar panel | 500 | 30.0 | 30.0000 |
+| solar panel | 1000 | 17.0 | 41.1765 |
 
 
 
